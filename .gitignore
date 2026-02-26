@@ -1,0 +1,33 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment variables - never commit these
+*.env
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swopwd
+
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# Node (for frontend)
+node_modules/
+.next/
