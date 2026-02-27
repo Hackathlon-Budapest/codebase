@@ -137,3 +137,20 @@ GPT was previously told to return only 5 states (`curious` was one of them) so i
 
 **Why it matters:**
 Before this fix, questions that got 0 GPT-selected responders would leave the teacher stuck on "Processing…" permanently (or after Push 8, unstuck but with no feedback). Teachers were double-sending questions because they couldn't tell if the turn had registered. Now: questions always get at least one response, and non-question silent turns show a clear indicator.
+
+---
+
+## Push 10 — Group addressing + student debates
+`2026-02-27`
+
+**Built:**
+- `agents/orchestrator.py` — added `_is_group_address()` helper; detects keywords: `"everyone"`, `"everybody"`, `"all of you"`, `"each of you"`, `"go around"`, `"1 by 1"`, `"one by one"`, `"one at a time"`, `"the class"`, `"whole class"`, `"around the room"`. When triggered, all available students (consecutive_turns_speaking < 3) are returned as responders instead of capping at 2. Updated system prompt to reflect 0–5 responder range.
+- `main.py` — replaced `asyncio.gather` (parallel) with a sequential loop over responders:
+  - Each student's history (`live_history`) includes the current session timeline **plus** any same-turn responses already generated, so later students can see and react to earlier ones
+  - Responses stream to the frontend as they're generated — no waiting for all to finish
+  - Individual `asyncio.wait_for` timeouts per student (10s LLM, 8s TTS) so one slow call doesn't block the rest
+  - WS send moved inside the loop (was a separate post-gather loop)
+- `agents/student_agent.py` — added one instruction line to `_build_context_message`: students are told they may build on, agree with, or push back on classmate responses visible in RECENT CONVERSATION
+
+**Why it matters:**
+Previously the orchestrator hard-capped at 2 responders and all LLM calls ran in parallel, so students never saw each other's same-turn responses. Group instructions like "I'd like everyone to share 1 by 1" would get 2 responses max and no debate. Now all 5 students respond to group prompts and each one sees what the previous students said, producing natural classroom dynamics.
