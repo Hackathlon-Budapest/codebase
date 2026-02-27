@@ -1,5 +1,19 @@
 import { create } from 'zustand'
 
+export interface AutopsyStudentImpact {
+  student: string
+  impact: string
+  sentiment: 'positive' | 'negative' | 'neutral'
+}
+
+export interface AutopsyAnnotation {
+  turn: number
+  teacher_text: string
+  overall_impact: 'positive' | 'negative' | 'neutral' | 'mixed'
+  tip: string | null
+  student_impacts: AutopsyStudentImpact[]
+}
+
 export type EmotionalState = 'curious' | 'confused' | 'bored' | 'frustrated' | 'engaged' | 'eager' | 'anxious' | 'distracted'
 
 export type StudentId = 'maya' | 'carlos' | 'jake' | 'priya' | 'marcus'
@@ -55,6 +69,9 @@ export interface SessionStore {
   feedbackText: string | null
   feedbackSummary: string | null
 
+  // Teaching autopsy
+  autopsy: AutopsyAnnotation[] | null
+
   // Whisper Coach
   coachingHint: string | null
 
@@ -74,6 +91,7 @@ export interface SessionStore {
   setProcessing: (processing: boolean) => void
   setError: (message: string | null) => void
   setFeedback: (text: string | null, summary: string | null) => void
+  setAutopsy: (autopsy: AutopsyAnnotation[] | null) => void
   setCoachingHint: (hint: string | null) => void
   updateStudentState: (studentId: StudentId, updates: Partial<StudentState>) => void
   addConversationEntry: (entry: ConversationEntry) => void
@@ -148,6 +166,8 @@ const INITIAL_STATE = {
   turnCount: 0,
   feedbackText: null,
   feedbackSummary: null,
+  autopsy: null,
+  coachingHint: null,
   isConnected: false,
   isProcessing: false,
   errorMessage: null,
@@ -170,6 +190,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
       engagementHistory: [],
       feedbackText: null,
       feedbackSummary: null,
+      autopsy: null,
       coachingHint: null,
     }),
 
@@ -184,6 +205,8 @@ export const useSessionStore = create<SessionStore>((set) => ({
   setError: (errorMessage) => set({ errorMessage }),
 
   setFeedback: (feedbackText, feedbackSummary) => set({ feedbackText, feedbackSummary }),
+
+  setAutopsy: (autopsy) => set({ autopsy }),
 
   setCoachingHint: (coachingHint) => set({ coachingHint }),
 
