@@ -13,25 +13,18 @@ const STUDENT_COLORS: Record<StudentId, string> = {
   marcus: '#34d399',
 }
 
-interface DataPoint {
-  time: string
-  maya?: number
-  carlos?: number
-  jake?: number
-  priya?: number
-  marcus?: number
-}
-
 export function EngagementTimeline() {
-  const timeline = useSessionStore((s) => s.timeline)
+  const engagementHistory = useSessionStore((s) => s.engagementHistory)
 
-  // Build chart data: one point per timeline entry that has engagement data
-  const chartData: DataPoint[] = timeline
-    .filter((e) => e.engagement !== undefined)
-    .map((e, i) => ({
-      time: `T${i + 1}`,
-      [e.speaker.toLowerCase()]: e.engagement,
-    }))
+  // Normalize 0-1 floats to 0-100 if needed
+  const chartData = engagementHistory.map((snapshot) => ({
+    time: `T${snapshot.turn}`,
+    maya: snapshot.maya <= 1 ? Math.round(snapshot.maya * 100) : Math.round(snapshot.maya),
+    carlos: snapshot.carlos <= 1 ? Math.round(snapshot.carlos * 100) : Math.round(snapshot.carlos),
+    jake: snapshot.jake <= 1 ? Math.round(snapshot.jake * 100) : Math.round(snapshot.jake),
+    priya: snapshot.priya <= 1 ? Math.round(snapshot.priya * 100) : Math.round(snapshot.priya),
+    marcus: snapshot.marcus <= 1 ? Math.round(snapshot.marcus * 100) : Math.round(snapshot.marcus),
+  }))
 
   if (chartData.length === 0) {
     return (
