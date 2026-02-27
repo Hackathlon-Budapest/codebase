@@ -16,13 +16,14 @@ const STUDENT_COLORS: Record<StudentId, string> = {
 export function EngagementTimeline() {
   const engagementHistory = useSessionStore((s) => s.engagementHistory)
 
-  const chartData = engagementHistory.map((snap) => ({
-    time: `T${snap.turn}`,
-    maya: snap.maya,
-    carlos: snap.carlos,
-    jake: snap.jake,
-    priya: snap.priya,
-    marcus: snap.marcus,
+  // Normalize 0-1 floats to 0-100 if needed
+  const chartData = engagementHistory.map((snapshot) => ({
+    time: `T${snapshot.turn}`,
+    maya: snapshot.maya <= 1 ? Math.round(snapshot.maya * 100) : Math.round(snapshot.maya),
+    carlos: snapshot.carlos <= 1 ? Math.round(snapshot.carlos * 100) : Math.round(snapshot.carlos),
+    jake: snapshot.jake <= 1 ? Math.round(snapshot.jake * 100) : Math.round(snapshot.jake),
+    priya: snapshot.priya <= 1 ? Math.round(snapshot.priya * 100) : Math.round(snapshot.priya),
+    marcus: snapshot.marcus <= 1 ? Math.round(snapshot.marcus * 100) : Math.round(snapshot.marcus),
   }))
 
   if (chartData.length === 0) {

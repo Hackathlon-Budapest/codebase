@@ -11,6 +11,7 @@ from models import (
 )
 from agents.orchestrator import decide_responders, update_student_states
 from agents.student_agent import generate_response
+from agents.feedback_agent import generate_feedback
 from services.azure_speech import text_to_speech
 
 load_dotenv()
@@ -63,7 +64,11 @@ async def end_session(session_id: str):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     session.active = False
-    return {"session_id": session_id, "timeline": session.timeline, "feedback": None}
+    try:
+        feedback = await generate_feedback(session)
+    except Exception as e:
+        feedback = {"summary": {}, "feedback": f"Feedback unavailable: {e}"}
+    return {"session_id": session_id, "timeline": session.timeline, "feedback": feedback}
 
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
@@ -117,7 +122,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                         "audio_base64": audio,
                     }
 
-                results = await asyncio.gather(*[_respond(r) for r in responders])
+                try:
+                    results = await asyncio.wait_for(
+                        asyncio.gather(*[_respond(r) for r in responders]),
+                        timeout=15.0
+                    )
+                except asyncio.TimeoutError:
+                    await websocket.send_text(ErrorMessage(message="Response timed out. Please try again.").model_dump_json())
+                    continue
                 responses = [r for r in results if r]
 
                 # 3. Push each student response to the frontend
@@ -146,7 +158,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     }
                     for sid, s in session.students.items()
                 }
-                await websocket.send_text(StateUpdate(students=state_snapshot).model_dump_json())
+                await websocket.send_text(StateUpdate(turn=session.turn_count, students=state_snapshot).model_dump_json())
             elif data.get("type") == "session_end":
                 await websocket.send_text(SessionEndMessage(session_id=session_id).model_dump_json())
                 break
