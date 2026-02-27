@@ -241,15 +241,28 @@ def update_student_states(session: SessionState, responses: list[dict]) -> None:
         if sid in responding_ids:
             continue
 
-        # Small passive engagement drift based on current state
+        # Engagement drift based on current emotional state
         if student.emotional_state in (EmotionalState.bored, EmotionalState.distracted):
-            drift = -0.02
+            eng_drift = -0.03
+        elif student.emotional_state in (EmotionalState.anxious, EmotionalState.frustrated):
+            eng_drift = -0.02
+        elif student.emotional_state == EmotionalState.confused:
+            eng_drift = -0.01
         elif student.emotional_state == EmotionalState.engaged:
-            drift = +0.01
-        else:
-            drift = 0.0
+            eng_drift = +0.01
+        else:  # eager
+            eng_drift = -0.01  # eager students get restless when not called on
 
-        student.engagement = _clamp(student.engagement + drift)
+        # Comprehension drifts down when student isn't actively responding
+        if student.emotional_state == EmotionalState.confused:
+            comp_drift = -0.02  # confusion deepens without intervention
+        elif student.emotional_state in (EmotionalState.bored, EmotionalState.distracted):
+            comp_drift = -0.01
+        else:
+            comp_drift = 0.0
+
+        student.engagement = _clamp(student.engagement + eng_drift)
+        student.comprehension = _clamp(student.comprehension + comp_drift)
         student.consecutive_turns_speaking = 0
 
 
