@@ -7,17 +7,6 @@ interface Props {
   showBubble?: boolean
 }
 
-const EMOTION_EMOJI: Record<EmotionalState, string> = {
-  curious: '🤔',
-  eager: '🙋',
-  confused: '😕',
-  distracted: '😵',
-  anxious: '😰',
-  bored: '😴',
-  engaged: '😊',
-  frustrated: '😤',
-}
-
 const EMOTION_BORDER: Record<EmotionalState, string> = {
   curious: 'border-blue-400',
   confused: 'border-yellow-400',
@@ -29,12 +18,38 @@ const EMOTION_BORDER: Record<EmotionalState, string> = {
   distracted: 'border-gray-400',
 }
 
-const AVATAR_COLORS: Record<string, string> = {
-  maya: 'bg-purple-600',
-  carlos: 'bg-orange-600',
-  jake: 'bg-blue-600',
-  priya: 'bg-pink-600',
-  marcus: 'bg-teal-600',
+
+const AVATAR_IMAGE_MAP: Record<string, Partial<Record<EmotionalState, string>>> = {
+  maya: {
+    eager: 'maya_engaged', engaged: 'maya_engaged', curious: 'maya_engaged',
+    confused: 'maya_frustrated', bored: 'maya_bored',
+    distracted: 'maya_bored', anxious: 'maya_frustrated', frustrated: 'maya_frustrated',
+  },
+  carlos: {
+    eager: 'carlos_engaged', engaged: 'carlos_engaged', curious: 'carlos_curious',
+    confused: 'carlos_confused', bored: 'carlos_engaged',
+    distracted: 'carlos_confused', anxious: 'carlos_confused', frustrated: 'carlos_frustrated',
+  },
+  jake: {
+    eager: 'jake_engaged', engaged: 'jake_engaged', curious: 'jake_curious',
+    confused: 'jake_curious', bored: 'jake_bored',
+    distracted: 'jake_bored', anxious: 'jake_curious', frustrated: 'jake_frustrated',
+  },
+  priya: {
+    eager: 'priya_engaged', engaged: 'priya_engaged', curious: 'priya_curious',
+    confused: 'priya_curious', bored: 'priya_engaged',
+    distracted: 'priya_engaged', anxious: 'priya_frustrated', frustrated: 'priya_frustrated',
+  },
+  marcus: {
+    eager: 'marcus_engaged', engaged: 'marcus_engaged', curious: 'marcus_curious',
+    confused: 'marcus_curious', bored: 'marcus_frustrated_bored',
+    distracted: 'marcus_frustrated_bored', anxious: 'marcus_curious', frustrated: 'marcus_frustrated',
+  },
+}
+
+function getAvatarSrc(studentId: string, emotion: EmotionalState): string {
+  const file = AVATAR_IMAGE_MAP[studentId]?.[emotion]
+  return file ? `/avatars/${file}.webp` : ''
 }
 
 // Normalize 0-1 float to 0-100 integer
@@ -44,8 +59,8 @@ function normalize(value: number): number {
 
 export function StudentAvatar({ student, showBubble = false }: Props) {
 
-  const borderColor = EMOTION_BORDER[student.emotional_state] ?? 'border-gray-500'
-  const avatarBg = AVATAR_COLORS[student.id] ?? 'bg-gray-600'
+  // const borderColor = EMOTION_BORDER[student.emotional_state] ?? 'border-gray-500'
+  const avatarSrc = getAvatarSrc(student.id, student.emotional_state)
   const engagement = normalize(student.engagement)
   const comprehension = normalize(student.comprehension)
 
@@ -55,23 +70,20 @@ export function StudentAvatar({ student, showBubble = false }: Props) {
       animate={showBubble ? { scale: [1, 1.04, 1] } : {}}
       transition={{ duration: 0.3 }}
     >
-      {/* Avatar circle */}
-      <div className="relative">
-        <motion.div
-          className={`w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold border-2 ${avatarBg} ${borderColor}`}
-          animate={showBubble ? {
-            boxShadow: ['0 0 0px #ffffff00', '0 0 14px #ffffff99', '0 0 0px #ffffff00'],
-            scale: [1, 1.07, 1],
-          } : { boxShadow: '0 0 0px #ffffff00', scale: 1 }}
-          transition={{ duration: 0.9, repeat: showBubble ? 2 : 0 }}
-        >
-          {student.name.charAt(0)}
-        </motion.div>
-        {/* Emotion badge */}
-        <div className="absolute -bottom-1 -right-1 text-base">
-          {EMOTION_EMOJI[student.emotional_state] ?? '😐'}
-        </div>
-      </div>
+      {/* Avatar */}
+      <motion.div
+        className={`w-36 h-36 rounded-xl overflow-hidden flex items-center justify-center text-2xl font-bold $`}
+        animate={showBubble ? {
+          boxShadow: ['0 0 0px #ffffff00', '0 0 14px #ffffff99', '0 0 0px #ffffff00'],
+          scale: [1, 1.07, 1],
+        } : { boxShadow: '0 0 0px #ffffff00', scale: 1 }}
+        transition={{ duration: 0.9, repeat: showBubble ? 2 : 0 }}
+      >
+        {avatarSrc
+          ? <img src={avatarSrc} alt={student.name} className="w-full h-full object-cover object-top" />
+          : student.name.charAt(0)
+        }
+      </motion.div>
 
       {/* Name */}
       <span className="text-sm font-semibold text-white">{student.name}</span>
