@@ -15,6 +15,7 @@ from agents.orchestrator import decide_responders, update_student_states
 from agents.student_agent import generate_response
 from services.azure_speech import text_to_speech, speech_to_text
 from agents.feedback_agent import generate_feedback
+from agents.autopsy_agent import generate_autopsy
 
 load_dotenv()
 
@@ -80,11 +81,27 @@ async def end_session(session_id: str):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     session.active = False
+
+    feedback_task = asyncio.create_task(generate_feedback(session))
+    autopsy_task = asyncio.create_task(generate_autopsy(session))
+
     try:
-        feedback = await generate_feedback(session)
+        feedback = await feedback_task
     except Exception as e:
         feedback = {"summary": {}, "feedback": f"Feedback unavailable: {e}"}
-    return {"session_id": session_id, "timeline": session.timeline, "feedback": feedback}
+
+    try:
+        autopsy = await autopsy_task
+    except Exception as e:
+        autopsy = []
+        print(f"[end_session] Autopsy failed: {e}")
+
+    return {
+        "session_id": session_id,
+        "timeline": session.timeline,
+        "feedback": feedback,
+        "autopsy": autopsy,
+    }
 
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
@@ -169,7 +186,18 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                         )
                         await websocket.send_text(msg.model_dump_json())
 
-                # 4. Update session state with deltas from this turn
+                # 4a. Log student responses into timeline (needed for autopsy)
+                for r in responses:
+                    if r["text"].strip():
+                        session.timeline.append({
+                            "turn": session.turn_count,
+                            "speaker": r["student_name"],
+                            "text": r["text"],
+                            "comprehension_delta": r["comprehension_delta"],
+                            "engagement_delta": r["engagement_delta"],
+                        })
+
+                # 4b. Update session state with deltas from this turn
                 update_student_states(session, responses)
 
                 # 5. Push updated state snapshot
