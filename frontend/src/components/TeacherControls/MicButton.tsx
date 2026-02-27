@@ -123,11 +123,11 @@ export function MicButton({ sendTeacherInput }: Props) {
         {showTranscriptBox && (
           <motion.div
             key="transcript"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.2 }}
-            className="w-full overflow-hidden"
+            className="w-full"
           >
             <div className="rounded-lg border border-classroom-border bg-classroom-bg p-3 text-sm space-y-1">
               {isRecording && (
