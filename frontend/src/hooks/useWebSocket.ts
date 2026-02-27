@@ -128,7 +128,6 @@ export function useWebSocket() {
           }
           hadResponseThisTurnRef.current = false
           setProcessing(false)
-          applyStateUpdate(msg.students)
           break
         }
         case 'session_end': {
