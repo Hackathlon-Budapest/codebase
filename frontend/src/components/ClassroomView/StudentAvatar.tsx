@@ -1,15 +1,15 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import type { StudentState, EmotionalState } from '../../store/sessionStore'
 import { EngagementBar } from './EngagementBar'
 
 interface Props {
   student: StudentState
-  lastMessage?: string
   messageKey?: string
 }
 
 const EMOTION_EMOJI: Record<EmotionalState, string> = {
+  curious: '🤔',
   eager: '🙋',
   confused: '😕',
   distracted: '😵',
@@ -20,6 +20,7 @@ const EMOTION_EMOJI: Record<EmotionalState, string> = {
 }
 
 const EMOTION_BORDER: Record<EmotionalState, string> = {
+  curious: 'border-blue-400',
   confused: 'border-yellow-400',
   bored: 'border-gray-500',
   engaged: 'border-green-400',
@@ -42,15 +43,14 @@ function normalize(value: number): number {
   return value <= 1 ? Math.round(value * 100) : Math.round(value)
 }
 
-export function StudentAvatar({ student, lastMessage, messageKey }: Props) {
+export function StudentAvatar({ student, messageKey }: Props) {
   const [showBubble, setShowBubble] = useState(false)
 
   useEffect(() => {
-    if (lastMessage) {
-      setShowBubble(true)
-      const timer = setTimeout(() => setShowBubble(false), 5000)
-      return () => clearTimeout(timer)
-    }
+    if (!messageKey) return
+    setShowBubble(true)
+    const timer = setTimeout(() => setShowBubble(false), 5000)
+    return () => clearTimeout(timer)
   }, [messageKey])
 
   const borderColor = EMOTION_BORDER[student.emotional_state] ?? 'border-gray-500'
@@ -91,22 +91,7 @@ export function StudentAvatar({ student, lastMessage, messageKey }: Props) {
         <EngagementBar label="Comprehension" value={comprehension} emotion={student.emotional_state} />
       </div>
 
-      {/* Speech bubble */}
-      <AnimatePresence>
-        {showBubble && lastMessage && (
-          <motion.div
-            key="bubble"
-            initial={{ opacity: 0, y: 6, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.95 }}
-            transition={{ duration: 0.25 }}
-            className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 bg-gray-800 text-gray-100 text-xs rounded-lg p-2 shadow-lg border border-gray-600 z-10 pointer-events-none"
-          >
-            <p className="line-clamp-3">{lastMessage}</p>
-            <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-800 border-r border-b border-gray-600 rotate-45" />
-          </motion.div>
-        )}
-      </AnimatePresence>
+
     </motion.div>
   )
 }

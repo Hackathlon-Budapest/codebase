@@ -1,7 +1,44 @@
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useSessionStore } from '../../store/sessionStore'
-import type { StudentId } from '../../store/sessionStore'
+import type { StudentId, StudentState } from '../../store/sessionStore'
 import { StudentAvatar } from './StudentAvatar'
 import { TemperatureGauge } from './TemperatureGauge'
+
+function StudentSlot({ student, lastMessage, messageKey }: { student: StudentState; lastMessage?: string; messageKey?: string }) {
+  const [showBubble, setShowBubble] = useState(false)
+
+  useEffect(() => {
+    if (!messageKey) return
+    setShowBubble(true)
+    const t = setTimeout(() => setShowBubble(false), 5000)
+    return () => clearTimeout(t)
+  }, [messageKey])
+
+  return (
+    <div className="flex flex-col items-center">
+      {/* Reserved bubble area — always 96px tall, bubble anchors to its bottom */}
+      <div className="h-24 w-52 flex items-end">
+        <AnimatePresence>
+          {showBubble && lastMessage && (
+            <motion.div
+              key={messageKey}
+              initial={{ opacity: 0, y: 6, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -4, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="w-full bg-gray-800 text-gray-100 text-xs rounded-lg p-2 shadow-xl border border-gray-600 pointer-events-none"
+            >
+              <p className="whitespace-normal break-words leading-relaxed">{lastMessage}</p>
+              <div className="absolute -bottom-[6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-800 border-r border-b border-gray-600 rotate-45" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      <StudentAvatar student={student} messageKey={messageKey} />
+    </div>
+  )
+}
 
 const STUDENT_ORDER: StudentId[] = ['maya', 'carlos', 'jake', 'priya', 'marcus']
 
@@ -41,17 +78,13 @@ export function ClassroomLayout() {
         {/* Back row: Maya, Carlos, Jake */}
         <div className="flex gap-4 justify-center">
           {STUDENT_ORDER.slice(0, 3).map((id) => (
-            <div key={id} className="relative">
-              <StudentAvatar student={students[id]} lastMessage={lastMessages[id]} messageKey={lastKeys[id]} />
-            </div>
+            <StudentSlot key={id} student={students[id]} lastMessage={lastMessages[id]} messageKey={lastKeys[id]} />
           ))}
         </div>
         {/* Front row: Priya, Marcus */}
         <div className="flex gap-4 justify-center">
           {STUDENT_ORDER.slice(3).map((id) => (
-            <div key={id} className="relative">
-              <StudentAvatar student={students[id]} lastMessage={lastMessages[id]} messageKey={lastKeys[id]} />
-            </div>
+            <StudentSlot key={id} student={students[id]} lastMessage={lastMessages[id]} messageKey={lastKeys[id]} />
           ))}
         </div>
       </div>
