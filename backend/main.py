@@ -86,6 +86,12 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 responders = await decide_responders(teacher_text, session)
 
                 # 2. Generate each selected student's response (in parallel)
+                lesson_context = {
+                    "subject": session.config.subject,
+                    "topic": session.config.topic,
+                    "grade_level": session.config.grade_level,
+                }
+
                 async def _respond(responder: dict) -> dict | None:
                     sid = responder["student_id"]
                     student = session.students.get(sid)
@@ -98,7 +104,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                         "emotional_state": student.emotional_state.value,
                         "response_history": [],
                     }
-                    resp = await generate_response(student_dict, teacher_text, session.timeline)
+                    resp = await generate_response(student_dict, teacher_text, session.timeline, lesson_context)
                     audio = await text_to_speech(resp.text, student.voice_id)
                     return {
                         "student_id": sid,
