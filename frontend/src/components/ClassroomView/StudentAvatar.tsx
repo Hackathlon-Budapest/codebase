@@ -14,6 +14,9 @@ const EMOTION_EMOJI: Record<EmotionalState, string> = {
   bored: '😴',
   frustrated: '😤',
   engaged: '😊',
+  eager: '🙋',
+  anxious: '😰',
+  distracted: '😵',
 }
 
 const EMOTION_BORDER: Record<EmotionalState, string> = {
@@ -22,15 +25,22 @@ const EMOTION_BORDER: Record<EmotionalState, string> = {
   bored: 'border-gray-500',
   frustrated: 'border-red-400',
   engaged: 'border-green-400',
+  eager: 'border-purple-400',
+  anxious: 'border-orange-400',
+  distracted: 'border-gray-400',
 }
 
-// Simple avatar initials with colored background
 const AVATAR_COLORS: Record<string, string> = {
   maya: 'bg-purple-600',
   carlos: 'bg-orange-600',
   jake: 'bg-blue-600',
   priya: 'bg-pink-600',
   marcus: 'bg-teal-600',
+}
+
+// Normalize 0-1 float to 0-100 integer
+function normalize(value: number): number {
+  return value <= 1 ? Math.round(value * 100) : Math.round(value)
 }
 
 export function StudentAvatar({ student, lastMessage }: Props) {
@@ -44,8 +54,10 @@ export function StudentAvatar({ student, lastMessage }: Props) {
     }
   }, [lastMessage])
 
-  const borderColor = EMOTION_BORDER[student.emotional_state]
+  const borderColor = EMOTION_BORDER[student.emotional_state] ?? 'border-gray-500'
   const avatarBg = AVATAR_COLORS[student.id] ?? 'bg-gray-600'
+  const engagement = normalize(student.engagement)
+  const comprehension = normalize(student.comprehension)
 
   return (
     <motion.div
@@ -64,7 +76,7 @@ export function StudentAvatar({ student, lastMessage }: Props) {
         </motion.div>
         {/* Emotion badge */}
         <div className="absolute -bottom-1 -right-1 text-base">
-          {EMOTION_EMOJI[student.emotional_state]}
+          {EMOTION_EMOJI[student.emotional_state] ?? '😐'}
         </div>
       </div>
 
@@ -73,8 +85,8 @@ export function StudentAvatar({ student, lastMessage }: Props) {
 
       {/* Bars */}
       <div className="w-full space-y-1">
-        <EngagementBar label="Engagement" value={student.engagement} emotion={student.emotional_state} />
-        <EngagementBar label="Comprehension" value={student.comprehension} emotion={student.emotional_state} />
+        <EngagementBar label="Engagement" value={engagement} emotion={student.emotional_state} />
+        <EngagementBar label="Comprehension" value={comprehension} emotion={student.emotional_state} />
       </div>
 
       {/* Speech bubble */}

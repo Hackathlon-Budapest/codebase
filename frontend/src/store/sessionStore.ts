@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type EmotionalState = 'curious' | 'confused' | 'bored' | 'frustrated' | 'engaged'
+export type EmotionalState = 'curious' | 'confused' | 'bored' | 'frustrated' | 'engaged' | 'eager' | 'anxious' | 'distracted'
 
 export type StudentId = 'maya' | 'carlos' | 'jake' | 'priya' | 'marcus'
 
@@ -23,12 +23,22 @@ export interface ConversationEntry {
   engagement?: number
 }
 
+export interface EngagementSnapshot {
+  turn: number
+  maya: number
+  carlos: number
+  jake: number
+  priya: number
+  marcus: number
+}
+
 export type AppView = 'setup' | 'classroom' | 'dashboard'
 
 export interface SessionStore {
   // Session metadata
   session_id: string | null
   topic: string
+  subject: string
   grade_level: string
   view: AppView
 
@@ -39,6 +49,13 @@ export interface SessionStore {
   conversation_log: ConversationEntry[]
   timeline: ConversationEntry[]
 
+  // Engagement history for timeline chart
+  engagementHistory: EngagementSnapshot[]
+
+  // Feedback from backend
+  feedbackText: string | null
+  feedbackSummary: string | null
+
   // Connection state
   isConnected: boolean
   isProcessing: boolean
@@ -46,6 +63,7 @@ export interface SessionStore {
 
   // Actions
   setTopic: (topic: string) => void
+  setSubject: (subject: string) => void
   setGradeLevel: (grade: string) => void
   startSession: (sessionId: string) => void
   endSession: () => void
@@ -53,9 +71,10 @@ export interface SessionStore {
   setConnected: (connected: boolean) => void
   setProcessing: (processing: boolean) => void
   setError: (message: string | null) => void
+  setFeedback: (text: string | null, summary: string | null) => void
   updateStudentState: (studentId: StudentId, updates: Partial<StudentState>) => void
   addConversationEntry: (entry: ConversationEntry) => void
-  applyStateUpdate: (students: Partial<Record<StudentId, Partial<StudentState>>>) => void
+  applyStateUpdate: (students: Partial<Record<StudentId, Partial<StudentState>>>, turn?: number) => void
   reset: () => void
 }
 
@@ -66,8 +85,8 @@ const INITIAL_STUDENTS: Record<StudentId, StudentState> = {
     persona: 'Eager overachiever — always answers first, asks advanced questions. Gets bored if the pace is too slow.',
     comprehension: 90,
     engagement: 85,
-    emotional_state: 'engaged',
-    voice_id: 'en-US-JennyNeural',
+    emotional_state: 'eager',
+    voice_id: 'en-US-AriaNeural',
     response_history: [],
   },
   carlos: {
@@ -86,8 +105,8 @@ const INITIAL_STUDENTS: Record<StudentId, StudentState> = {
     persona: 'Distracted / ADHD — goes off-topic, needs frequent re-engagement. Responds to enthusiasm and direct callouts.',
     comprehension: 50,
     engagement: 40,
-    emotional_state: 'bored',
-    voice_id: 'en-US-BrandonNeural',
+    emotional_state: 'distracted',
+    voice_id: 'en-US-GuyNeural',
     response_history: [],
   },
   priya: {
@@ -96,7 +115,7 @@ const INITIAL_STUDENTS: Record<StudentId, StudentState> = {
     persona: 'Anxious / quiet — rarely speaks unless directly called on. Blooms with encouragement, shuts down under pressure.',
     comprehension: 75,
     engagement: 50,
-    emotional_state: 'curious',
+    emotional_state: 'anxious',
     voice_id: 'en-IN-NeerjaNeural',
     response_history: [],
   },
@@ -112,23 +131,40 @@ const INITIAL_STUDENTS: Record<StudentId, StudentState> = {
   },
 }
 
-export const useSessionStore = create<SessionStore>((set) => ({
+const INITIAL_STATE = {
   session_id: null,
   topic: '',
+  subject: '',
   grade_level: '',
-  view: 'setup',
+  view: 'setup' as AppView,
   students: INITIAL_STUDENTS,
   conversation_log: [],
   timeline: [],
+  engagementHistory: [],
+  feedbackText: null,
+  feedbackSummary: null,
   isConnected: false,
   isProcessing: false,
   errorMessage: null,
+}
+
+export const useSessionStore = create<SessionStore>((set) => ({
+  ...INITIAL_STATE,
 
   setTopic: (topic) => set({ topic }),
+  setSubject: (subject) => set({ subject }),
   setGradeLevel: (grade_level) => set({ grade_level }),
 
   startSession: (sessionId) =>
-    set({ session_id: sessionId, view: 'classroom', conversation_log: [], timeline: [] }),
+    set({
+      session_id: sessionId,
+      view: 'classroom',
+      conversation_log: [],
+      timeline: [],
+      engagementHistory: [],
+      feedbackText: null,
+      feedbackSummary: null,
+    }),
 
   endSession: () => set({ view: 'dashboard', isProcessing: false }),
 
@@ -139,6 +175,8 @@ export const useSessionStore = create<SessionStore>((set) => ({
   setProcessing: (isProcessing) => set({ isProcessing }),
 
   setError: (errorMessage) => set({ errorMessage }),
+
+  setFeedback: (feedbackText, feedbackSummary) => set({ feedbackText, feedbackSummary }),
 
   updateStudentState: (studentId, updates) =>
     set((state) => ({
@@ -154,7 +192,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
       timeline: [...state.timeline, entry],
     })),
 
-  applyStateUpdate: (updates) =>
+  applyStateUpdate: (updates, turn) =>
     set((state) => {
       const nextStudents = { ...state.students }
       for (const [id, patch] of Object.entries(updates)) {
@@ -163,20 +201,22 @@ export const useSessionStore = create<SessionStore>((set) => ({
           nextStudents[sid] = { ...nextStudents[sid], ...patch }
         }
       }
-      return { students: nextStudents }
+
+      // Record engagement snapshot for timeline chart
+      const snapshot: EngagementSnapshot = {
+        turn: turn ?? state.engagementHistory.length + 1,
+        maya: nextStudents.maya.engagement,
+        carlos: nextStudents.carlos.engagement,
+        jake: nextStudents.jake.engagement,
+        priya: nextStudents.priya.engagement,
+        marcus: nextStudents.marcus.engagement,
+      }
+
+      return {
+        students: nextStudents,
+        engagementHistory: [...state.engagementHistory, snapshot],
+      }
     }),
 
-  reset: () =>
-    set({
-      session_id: null,
-      topic: '',
-      grade_level: '',
-      view: 'setup',
-      students: INITIAL_STUDENTS,
-      conversation_log: [],
-      timeline: [],
-      isConnected: false,
-      isProcessing: false,
-      errorMessage: null,
-    }),
+  reset: () => set(INITIAL_STATE),
 }))
