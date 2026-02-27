@@ -6,25 +6,25 @@ import { EngagementBar } from './EngagementBar'
 interface Props {
   student: StudentState
   lastMessage?: string
+  messageKey?: string
 }
 
 const EMOTION_EMOJI: Record<EmotionalState, string> = {
-  curious: '🤔',
-  confused: '😕',
-  bored: '😴',
-  frustrated: '😤',
-  engaged: '😊',
   eager: '🙋',
-  anxious: '😰',
+  confused: '😕',
   distracted: '😵',
+  anxious: '😰',
+  bored: '😴',
+  engaged: '😊',
+  frustrated: '😤',
 }
 
 const EMOTION_BORDER: Record<EmotionalState, string> = {
-  curious: 'border-blue-400',
   confused: 'border-yellow-400',
+  anxious: 'border-purple-400',
   bored: 'border-gray-500',
-  frustrated: 'border-red-400',
   engaged: 'border-green-400',
+  frustrated: 'border-red-400',
   eager: 'border-purple-400',
   anxious: 'border-orange-400',
   distracted: 'border-gray-400',
@@ -52,7 +52,7 @@ export function StudentAvatar({ student, lastMessage }: Props) {
       const timer = setTimeout(() => setShowBubble(false), 5000)
       return () => clearTimeout(timer)
     }
-  }, [lastMessage])
+  }, [messageKey])
 
   const borderColor = EMOTION_BORDER[student.emotional_state] ?? 'border-gray-500'
   const avatarBg = AVATAR_COLORS[student.id] ?? 'bg-gray-600'
@@ -69,8 +69,11 @@ export function StudentAvatar({ student, lastMessage }: Props) {
       <div className="relative">
         <motion.div
           className={`w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold border-2 ${avatarBg} ${borderColor}`}
-          animate={showBubble ? { borderColor: ['#ffffff44', '#ffffffcc', '#ffffff44'] } : {}}
-          transition={{ duration: 1.5, repeat: showBubble ? 2 : 0 }}
+          animate={showBubble ? {
+            boxShadow: ['0 0 0px #ffffff00', '0 0 14px #ffffff99', '0 0 0px #ffffff00'],
+            scale: [1, 1.07, 1],
+          } : { boxShadow: '0 0 0px #ffffff00', scale: 1 }}
+          transition={{ duration: 0.9, repeat: showBubble ? 2 : 0 }}
         >
           {student.name.charAt(0)}
         </motion.div>

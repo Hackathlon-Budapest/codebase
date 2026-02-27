@@ -8,11 +8,10 @@ interface Props {
 }
 
 const EMOTION_COLORS: Record<EmotionalState, string> = {
-  curious: '#60a5fa',
   confused: '#f59e0b',
   bored: '#6b7280',
-  frustrated: '#ef4444',
   engaged: '#22c55e',
+  frustrated: '#ef4444',
   eager: '#a78bfa',
   anxious: '#fb923c',
   distracted: '#9ca3af',
