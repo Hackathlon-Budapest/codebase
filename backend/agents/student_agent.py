@@ -141,7 +141,7 @@ async def generate_response(
     response_data = await chat_completion_json(
         messages=messages,
         temperature=0.8,  # Some creativity for natural responses
-        max_tokens=300,
+        max_tokens=100,
     )
 
     # Parse and validate response
