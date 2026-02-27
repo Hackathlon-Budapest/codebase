@@ -31,3 +31,6 @@ build/
 # Node (for frontend)
 node_modules/
 .next/
+
+# Other
+temp.md

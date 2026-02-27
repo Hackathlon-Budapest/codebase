@@ -19,6 +19,7 @@ interface StudentResponseMsg {
 interface StateUpdateMsg {
   type: 'state_update'
   students: Partial<Record<StudentId, { engagement: number; comprehension: number; emotional_state: string }>>
+  coaching_hint?: string | null
 }
 
 interface SessionEndMsg {
@@ -67,6 +68,7 @@ export function useWebSocket() {
     applyStateUpdate,
     addConversationEntry,
     endSession,
+    setCoachingHint,
   } = useSessionStore()
 
   const handleMessage = useCallback(
@@ -103,6 +105,20 @@ export function useWebSocket() {
           break
         }
         case 'state_update': {
+          const scaled: Partial<Record<StudentId, { engagement: number; comprehension: number; emotional_state: string }>> = {}
+          for (const [id, s] of Object.entries(msg.students)) {
+            if (s) {
+              scaled[id as StudentId] = {
+                engagement: Math.round(s.engagement * 100),
+                comprehension: Math.round(s.comprehension * 100),
+                emotional_state: s.emotional_state,
+              }
+            }
+          }
+          applyStateUpdate(scaled)
+          if (msg.coaching_hint !== undefined) {
+            setCoachingHint(msg.coaching_hint ?? null)
+          }
           if (!hadResponseThisTurnRef.current) {
             addConversationEntry({
               timestamp: new Date().toISOString(),
@@ -126,7 +142,7 @@ export function useWebSocket() {
         }
       }
     },
-    [setProcessing, updateStudentState, addConversationEntry, applyStateUpdate, endSession, setError]
+    [setProcessing, updateStudentState, addConversationEntry, applyStateUpdate, endSession, setError, setCoachingHint]
   )
 
   useEffect(() => {

@@ -61,6 +61,7 @@ class StateUpdate(BaseModel):
     type: str = "state_update"
     turn: int
     students: dict[str, dict]
+    coaching_hint: Optional[str] = None
 
 
 class SessionEndMessage(BaseModel):

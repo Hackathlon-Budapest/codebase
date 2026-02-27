@@ -1,12 +1,18 @@
 import { useSessionStore } from '../../store/sessionStore'
 import type { StudentId } from '../../store/sessionStore'
 import { StudentAvatar } from './StudentAvatar'
+import { TemperatureGauge } from './TemperatureGauge'
 
 const STUDENT_ORDER: StudentId[] = ['maya', 'carlos', 'jake', 'priya', 'marcus']
 
 export function ClassroomLayout() {
   const students = useSessionStore((s) => s.students)
   const conversation_log = useSessionStore((s) => s.conversation_log)
+
+  const studentList = Object.values(students)
+  const avgEngagement = Math.round(
+    studentList.reduce((sum, s) => sum + s.engagement, 0) / studentList.length
+  )
 
   // Get last message + timestamp key per student
   const lastMessages: Partial<Record<StudentId, string>> = {}
@@ -21,6 +27,12 @@ export function ClassroomLayout() {
 
   return (
     <div className="flex flex-col items-center gap-4">
+      {/* Temperature gauge */}
+      <div className="flex flex-col items-center gap-1">
+        <div className="text-xs uppercase tracking-widest text-gray-500">Classroom Temperature</div>
+        <TemperatureGauge value={avgEngagement} />
+      </div>
+
       {/* Classroom label */}
       <div className="text-xs uppercase tracking-widest text-gray-500">Classroom</div>
 
