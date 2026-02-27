@@ -41,23 +41,10 @@ export function useWebSocket() {
   const hadResponseThisTurnRef = useRef(false)
 
   // Sequential audio queue — prevents overlapping student voices
-  const audioQueueRef = useRef<string[]>([])
+  const audioQueueRef = useRef<{ studentId: StudentId; audio: string }[]>([])
   const isPlayingRef = useRef(false)
   // Stored in a ref so the closure inside Audio callbacks always sees the latest version
   const playNextRef = useRef<() => void>()
-  playNextRef.current = () => {
-    if (isPlayingRef.current || audioQueueRef.current.length === 0) return
-    const base64 = audioQueueRef.current.shift()!
-    isPlayingRef.current = true
-    const audio = new Audio(`data:audio/mp3;base64,${base64}`)
-    const onDone = () => {
-      isPlayingRef.current = false
-      playNextRef.current?.()
-    }
-    audio.onended = onDone
-    audio.onerror = onDone
-    audio.play().catch(onDone)
-  }
 
   const {
     session_id,
@@ -69,7 +56,24 @@ export function useWebSocket() {
     addConversationEntry,
     endSession,
     setCoachingHint,
+    setSpeakingStudent,
   } = useSessionStore()
+
+  playNextRef.current = () => {
+    if (isPlayingRef.current || audioQueueRef.current.length === 0) return
+    const item = audioQueueRef.current.shift()!
+    isPlayingRef.current = true
+    setSpeakingStudent(item.studentId)
+    const audio = new Audio(`data:audio/mp3;base64,${item.audio}`)
+    const onDone = () => {
+      isPlayingRef.current = false
+      setSpeakingStudent(null)
+      playNextRef.current?.()
+    }
+    audio.onended = onDone
+    audio.onerror = onDone
+    audio.play().catch(onDone)
+  }
 
   const handleMessage = useCallback(
     (event: MessageEvent) => {
@@ -99,7 +103,7 @@ export function useWebSocket() {
           })
           // Enqueue audio — plays sequentially to prevent overlapping voices
           if (msg.audio_base64) {
-            audioQueueRef.current.push(msg.audio_base64)
+            audioQueueRef.current.push({ studentId: msg.student_id, audio: msg.audio_base64 })
             playNextRef.current?.()
           }
           break
@@ -141,7 +145,7 @@ export function useWebSocket() {
         }
       }
     },
-    [setProcessing, updateStudentState, addConversationEntry, applyStateUpdate, endSession, setError, setCoachingHint]
+    [setProcessing, updateStudentState, addConversationEntry, applyStateUpdate, endSession, setError, setCoachingHint, setSpeakingStudent]
   )
 
   useEffect(() => {
