@@ -1,8 +1,10 @@
 import uuid
 import json
+import base64
 import asyncio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from dotenv import load_dotenv
 from models import (
     SessionState, SessionConfig, StudentState,
@@ -11,8 +13,8 @@ from models import (
 )
 from agents.orchestrator import decide_responders, update_student_states
 from agents.student_agent import generate_response
+from services.azure_speech import text_to_speech, speech_to_text
 from agents.feedback_agent import generate_feedback
-from services.azure_speech import text_to_speech
 
 load_dotenv()
 
@@ -36,9 +38,23 @@ DEFAULT_STUDENTS = [
     StudentState(id="marcus", name="Marcus", persona="checked_out", voice_id="en-US-DavisNeural", engagement=0.2, comprehension=0.4, emotional_state=EmotionalState.bored),
 ]
 
+class STTRequest(BaseModel):
+    audio_base64: str
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "sessions_active": len(sessions)}
+
+
+@app.post("/stt")
+async def stt_endpoint(body: STTRequest):
+    try:
+        audio_bytes = base64.b64decode(body.audio_base64)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid base64 audio")
+    text = await speech_to_text(audio_bytes)
+    return {"text": text}
 
 @app.post("/session")
 async def create_session(config: SessionConfig):

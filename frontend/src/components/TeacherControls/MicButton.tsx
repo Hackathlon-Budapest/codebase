@@ -1,28 +1,61 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAudioRecorder } from '../../hooks/useAudioRecorder'
 import { useWebSocket } from '../../hooks/useWebSocket'
 import { useSessionStore } from '../../store/sessionStore'
+
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
 export function MicButton() {
   const { isRecording, startRecording, stopRecording, error: micError } = useAudioRecorder()
   const { sendTeacherInput } = useWebSocket()
   const isProcessing = useSessionStore((s) => s.isProcessing)
   const isConnected = useSessionStore((s) => s.isConnected)
+  const [isTranscribing, setIsTranscribing] = useState(false)
+  const [sttError, setSttError] = useState<string | null>(null)
 
   const handleClick = async () => {
     if (isRecording) {
       const audio_base64 = await stopRecording()
-      if (audio_base64) {
-        // Send audio to backend (backend will do STT)
-        // For now send as a placeholder — Dev 2 integrates STT here
-        sendTeacherInput('[audio]')
+      if (!audio_base64) return
+
+      setSttError(null)
+      setIsTranscribing(true)
+      try {
+        const res = await fetch(`${API_URL}/stt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audio_base64 }),
+        })
+        const data = await res.json()
+        if (data.text?.trim()) {
+          sendTeacherInput(data.text.trim())
+        } else {
+          setSttError('Could not transcribe — please try again')
+        }
+      } catch {
+        setSttError('STT request failed')
+      } finally {
+        setIsTranscribing(false)
       }
     } else {
+      setSttError(null)
       await startRecording()
     }
   }
 
-  const disabled = isProcessing || !isConnected
+  const busy = isProcessing || isTranscribing
+  const disabled = busy || !isConnected
+
+  const label = isRecording
+    ? 'Recording… tap to send'
+    : isTranscribing
+    ? 'Transcribing…'
+    : isProcessing
+    ? 'Processing…'
+    : !isConnected
+    ? 'Connecting…'
+    : 'Tap to speak'
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -43,15 +76,13 @@ export function MicButton() {
         `}
         aria-label={isRecording ? 'Stop recording' : 'Start recording'}
       >
-        {isRecording ? '⏹' : '🎤'}
+        {isRecording ? '⏹' : isTranscribing ? '…' : '🎤'}
       </motion.button>
 
-      <span className="text-xs text-gray-400">
-        {isRecording ? 'Recording… tap to send' : isProcessing ? 'Processing…' : !isConnected ? 'Connecting…' : 'Tap to speak'}
-      </span>
+      <span className="text-xs text-gray-400">{label}</span>
 
-      {micError && (
-        <p className="text-xs text-red-400">{micError}</p>
+      {(micError || sttError) && (
+        <p className="text-xs text-red-400">{micError ?? sttError}</p>
       )}
     </div>
   )

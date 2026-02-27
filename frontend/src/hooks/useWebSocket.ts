@@ -37,6 +37,25 @@ export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Sequential audio queue — prevents overlapping student voices
+  const audioQueueRef = useRef<string[]>([])
+  const isPlayingRef = useRef(false)
+  // Stored in a ref so the closure inside Audio callbacks always sees the latest version
+  const playNextRef = useRef<() => void>()
+  playNextRef.current = () => {
+    if (isPlayingRef.current || audioQueueRef.current.length === 0) return
+    const base64 = audioQueueRef.current.shift()!
+    isPlayingRef.current = true
+    const audio = new Audio(`data:audio/mp3;base64,${base64}`)
+    const onDone = () => {
+      isPlayingRef.current = false
+      playNextRef.current?.()
+    }
+    audio.onended = onDone
+    audio.onerror = onDone
+    audio.play().catch(onDone)
+  }
+
   const {
     session_id,
     setConnected,
@@ -73,10 +92,10 @@ export function useWebSocket() {
             emotion: msg.emotional_state as never,
             engagement: Math.round(msg.engagement * 100),
           })
-          // Play audio if provided
+          // Enqueue audio — plays sequentially to prevent overlapping voices
           if (msg.audio_base64) {
-            const audio = new Audio(`data:audio/mp3;base64,${msg.audio_base64}`)
-            audio.play().catch(console.error)
+            audioQueueRef.current.push(msg.audio_base64)
+            playNextRef.current?.()
           }
           break
         }
