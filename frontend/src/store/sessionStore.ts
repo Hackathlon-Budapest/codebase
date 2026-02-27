@@ -58,6 +58,9 @@ export interface SessionStore {
   // Whisper Coach
   coachingHint: string | null
 
+  // Speaking state (set by audio queue, drives speech bubbles)
+  speakingStudentId: StudentId | null
+
   // Connection state
   isConnected: boolean
   isProcessing: boolean
@@ -75,6 +78,7 @@ export interface SessionStore {
   setError: (message: string | null) => void
   setFeedback: (text: string | null, summary: string | null) => void
   setCoachingHint: (hint: string | null) => void
+  setSpeakingStudent: (id: StudentId | null) => void
   updateStudentState: (studentId: StudentId, updates: Partial<StudentState>) => void
   addConversationEntry: (entry: ConversationEntry) => void
   addEngagementSnapshot: (snapshot: EngagementSnapshot) => void
@@ -148,6 +152,7 @@ const INITIAL_STATE = {
   turnCount: 0,
   feedbackText: null,
   feedbackSummary: null,
+  speakingStudentId: null,
   isConnected: false,
   isProcessing: false,
   errorMessage: null,
@@ -186,6 +191,8 @@ export const useSessionStore = create<SessionStore>((set) => ({
   setFeedback: (feedbackText, feedbackSummary) => set({ feedbackText, feedbackSummary }),
 
   setCoachingHint: (coachingHint) => set({ coachingHint }),
+
+  setSpeakingStudent: (speakingStudentId) => set({ speakingStudentId }),
 
   updateStudentState: (studentId, updates) =>
     set((state) => ({
