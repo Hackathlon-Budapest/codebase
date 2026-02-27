@@ -187,8 +187,9 @@ def update_student_states(session: SessionState, responses: list[dict]) -> None:
             continue
         student = session.students[sid]
 
-        comp_delta = float(response.get("comprehension_delta", 0.0))
-        eng_delta = float(response.get("engagement_delta", 0.0))
+        # student_agent returns deltas on a 0-100 scale; session state uses 0.0-1.0
+        comp_delta = float(response.get("comprehension_delta", 0.0)) / 100.0
+        eng_delta = float(response.get("engagement_delta", 0.0)) / 100.0
 
         student.comprehension = _clamp(student.comprehension + comp_delta)
         student.engagement = _clamp(student.engagement + eng_delta)

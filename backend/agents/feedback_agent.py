@@ -42,16 +42,14 @@ async def generate_feedback(session: SessionState) -> dict:
     """
     summary = get_session_summary(session)
 
-    # TODO: wire up GPT-4o call in Hours 14-18
-    # messages = [
-    #     {"role": "system", "content": FEEDBACK_SYSTEM_PROMPT},
-    #     {"role": "user", "content": json.dumps(summary, indent=2)},
-    # ]
-    # from services.azure_openai import chat_completion
-    # result = await chat_completion(messages, json_mode=False)
-    # feedback_text = result.get("content", "")
+    import json
+    from services.azure_openai import chat_completion
 
-    feedback_text = "[Feedback generation not yet implemented — GPT-4o call pending Dev 2 completion]"
+    messages = [
+        {"role": "system", "content": FEEDBACK_SYSTEM_PROMPT},
+        {"role": "user", "content": json.dumps(summary, indent=2)},
+    ]
+    feedback_text = await chat_completion(messages, json_mode=False)
 
     return {
         "summary": summary,

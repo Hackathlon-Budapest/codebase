@@ -1,5 +1,6 @@
 import uuid
 import json
+import asyncio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -8,6 +9,9 @@ from models import (
     StudentResponse, StateUpdate,
     SessionEndMessage, ErrorMessage, EmotionalState
 )
+from agents.orchestrator import decide_responders, update_student_states
+from agents.student_agent import generate_response
+from services.azure_speech import text_to_speech
 
 load_dotenv()
 
@@ -77,13 +81,65 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 teacher_text = data.get("text", "")
                 session.turn_count += 1
                 session.timeline.append({"turn": session.turn_count, "speaker": "teacher", "text": teacher_text})
-                echo_response = StudentResponse(
-                    student_id="maya", student_name="Maya",
-                    text=f"[ECHO] Teacher said: {teacher_text}",
-                    emotional_state=EmotionalState.eager, engagement=0.95, comprehension=0.9,
-                )
-                await websocket.send_text(echo_response.model_dump_json())
-                state_snapshot = {sid: {"engagement": s.engagement, "comprehension": s.comprehension, "emotional_state": s.emotional_state} for sid, s in session.students.items()}
+
+                # 1. Orchestrator decides which students respond this turn
+                responders = await decide_responders(teacher_text, session)
+
+                # 2. Generate each selected student's response (in parallel)
+                async def _respond(responder: dict) -> dict | None:
+                    sid = responder["student_id"]
+                    student = session.students.get(sid)
+                    if not student:
+                        return None
+                    student_dict = {
+                        "name": student.name,
+                        "comprehension": round(student.comprehension * 100),
+                        "engagement": round(student.engagement * 100),
+                        "emotional_state": student.emotional_state.value,
+                        "response_history": [],
+                    }
+                    resp = await generate_response(student_dict, teacher_text, session.timeline)
+                    audio = await text_to_speech(resp.text, student.voice_id)
+                    return {
+                        "student_id": sid,
+                        "student_name": student.name,
+                        "voice_id": student.voice_id,
+                        "text": resp.text,
+                        "emotional_state": resp.emotional_state,
+                        "comprehension_delta": resp.comprehension_delta,
+                        "engagement_delta": resp.engagement_delta,
+                        "audio_base64": audio,
+                    }
+
+                results = await asyncio.gather(*[_respond(r) for r in responders])
+                responses = [r for r in results if r]
+
+                # 3. Push each student response to the frontend
+                for resp in responses:
+                    student = session.students[resp["student_id"]]
+                    msg = StudentResponse(
+                        student_id=resp["student_id"],
+                        student_name=resp["student_name"],
+                        text=resp["text"],
+                        emotional_state=EmotionalState(resp["emotional_state"]),
+                        engagement=student.engagement,
+                        comprehension=student.comprehension,
+                        audio_base64=resp["audio_base64"],
+                    )
+                    await websocket.send_text(msg.model_dump_json())
+
+                # 4. Update session state with deltas from this turn
+                update_student_states(session, responses)
+
+                # 5. Push updated state snapshot
+                state_snapshot = {
+                    sid: {
+                        "engagement": s.engagement,
+                        "comprehension": s.comprehension,
+                        "emotional_state": s.emotional_state,
+                    }
+                    for sid, s in session.students.items()
+                }
                 await websocket.send_text(StateUpdate(students=state_snapshot).model_dump_json())
             elif data.get("type") == "session_end":
                 await websocket.send_text(SessionEndMessage(session_id=session_id).model_dump_json())
