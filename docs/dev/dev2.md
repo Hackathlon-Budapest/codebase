@@ -82,3 +82,37 @@
 
 **Why it matters:**
 GPT was previously told to return only 5 states (`curious` was one of them) so it never returned `eager`, `anxious`, or `distracted`. Dev 3 extended the frontend `EmotionalState` type to all 7 values but they could never appear in a live session — student emotion badges were effectively stuck. Now GPT's output aligns with both `models.py` and the frontend type.
+
+---
+
+## Push 5 — Text input fallback (demo safety)
+`2026-02-27`
+
+**Built:**
+- `components/TeacherControls/MicButton.tsx` — added text input + Send button below the mic button
+  - Teacher can type input directly and press Enter or click Send
+  - Disabled while `isProcessing` or not connected (same guards as mic)
+  - Clears after send
+  - STT error messages now guide toward the text input ("use text input below")
+  - Mic button still fully functional — this is an additive fallback, not a replacement
+
+**Why:** faster-whisper model download (~30s on first call) can stall the demo. Text input ensures the teacher can always send input regardless of STT availability.
+
+---
+
+## Push 6 — Fix stuck Processing state on WS disconnect
+`2026-02-27`
+
+**Built:**
+- `hooks/useWebSocket.ts` — added `setProcessing(false)` to `ws.onclose` handler; added `setProcessing` to `useEffect` deps
+
+**Why:** if the backend drops the WS while processing a GPT response (timeout, crash, network blip), `isProcessing` was never reset and the mic + text input stayed permanently disabled. Now any WS close resets the processing state so the teacher can immediately retry.
+
+---
+
+## Push 7 — Fix 0 student responses + dashboard crash
+`2026-02-27`
+
+**Built:**
+- `agents/orchestrator.py` — replaced `chat_completion` with `chat_completion_json`; simplified result parsing to `result.get("responders", [])`. Root cause: `chat_completion` returns a `str`, but the orchestrator was checking `isinstance(result, dict)` which was always `False` → `raw_responders = []` → no student ever responded.
+- `components/Dashboard/SessionReport.tsx` — fixed feedback key from `data.feedback?.coaching_text` to `data.feedback?.feedback`. Root cause: `generate_feedback` returns `{"summary": ..., "feedback": "text"}` but the frontend was looking for `.coaching_text` (which doesn't exist), fell back to the entire dict, then `<pre>` crashed trying to render an object instead of a string.

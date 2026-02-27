@@ -135,6 +135,7 @@ export function useWebSocket() {
       ws.onclose = () => {
         if (cancelled) return
         setConnected(false)
+        setProcessing(false)
         reconnectTimer = setTimeout(open, 2000)
       }
 
@@ -155,7 +156,7 @@ export function useWebSocket() {
       wsRef.current?.close()
       wsRef.current = null
     }
-  }, [session_id, handleMessage, setConnected, setError])
+  }, [session_id, handleMessage, setConnected, setProcessing, setError])
 
   const sendTeacherInput = useCallback(
     (text: string) => {
