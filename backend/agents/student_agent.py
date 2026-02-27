@@ -37,8 +37,20 @@ def _build_context_message(
     persona: PersonaDefinition,
     teacher_input: str,
     history: list[dict],
+    lesson_context: dict | None = None,
 ) -> str:
     """Build the context message that includes current state and teacher input."""
+
+    # Lesson context block
+    if lesson_context:
+        lesson_block = (
+            f"LESSON CONTEXT:\n"
+            f"- Subject: {lesson_context.get('subject', 'Unknown')}\n"
+            f"- Topic: {lesson_context.get('topic', 'Unknown')}\n"
+            f"- Grade level: {lesson_context.get('grade_level', 'Unknown')}\n\n"
+        )
+    else:
+        lesson_block = ""
 
     # Recent history summary (last few exchanges)
     recent_history = ""
@@ -49,7 +61,7 @@ def _build_context_message(
             text = entry.get("text", "")
             recent_history += f"  {speaker}: {text}\n"
 
-    return f"""CURRENT STATE:
+    return f"""{lesson_block}CURRENT STATE:
 - Comprehension level: {state.comprehension}/100
 - Engagement level: {state.engagement}/100
 - Current emotion: {state.emotional_state}
@@ -88,6 +100,7 @@ async def generate_response(
     student_state: dict | StudentState,
     teacher_input: str,
     history: list[dict],
+    lesson_context: dict | None = None,
 ) -> StudentResponse:
     """
     Generate a student response to teacher input.
@@ -96,6 +109,7 @@ async def generate_response(
         student_state: Current state of the student (dict or StudentState)
         teacher_input: What the teacher just said
         history: Conversation history [{speaker, text, ...}, ...]
+        lesson_context: Optional dict with subject, topic, grade_level from SessionConfig
 
     Returns:
         StudentResponse with text, emotional_state, and state deltas
@@ -118,7 +132,7 @@ async def generate_response(
     # Build messages
     messages = [
         {"role": "system", "content": persona.system_prompt},
-        {"role": "user", "content": _build_context_message(state, persona, teacher_input, history)},
+        {"role": "user", "content": _build_context_message(state, persona, teacher_input, history, lesson_context)},
     ]
 
     # Call LLM
@@ -157,6 +171,7 @@ async def generate_responses_batch(
     teacher_input: str,
     history: list[dict],
     selected_students: list[str],
+    lesson_context: dict | None = None,
 ) -> dict[str, StudentResponse]:
     """
     Generate responses for multiple selected students.
@@ -166,6 +181,7 @@ async def generate_responses_batch(
         teacher_input: What the teacher said
         history: Conversation history
         selected_students: Names of students who should respond
+        lesson_context: Optional dict with subject, topic, grade_level from SessionConfig
 
     Returns:
         Dict mapping student name to their response
@@ -177,7 +193,7 @@ async def generate_responses_batch(
 
     # Generate responses in parallel
     tasks = [
-        generate_response(state, teacher_input, history)
+        generate_response(state, teacher_input, history, lesson_context)
         for state in states_to_process
     ]
 
