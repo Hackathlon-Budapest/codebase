@@ -11,7 +11,6 @@ const EMOTION_EMOJI: Record<EmotionalState, string> = {
   curious: '🤔',
   eager: '🙋',
   confused: '😕',
-  curious: '🤔',
   distracted: '😵',
   anxious: '😰',
   bored: '😴',
@@ -22,7 +21,6 @@ const EMOTION_EMOJI: Record<EmotionalState, string> = {
 const EMOTION_BORDER: Record<EmotionalState, string> = {
   curious: 'border-blue-400',
   confused: 'border-yellow-400',
-  curious: 'border-cyan-400',
   bored: 'border-gray-500',
   engaged: 'border-green-400',
   frustrated: 'border-red-400',

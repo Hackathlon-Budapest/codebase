@@ -22,6 +22,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models import SessionState, EmotionalState
+from personas.personas import PERSONAS
 
 try:
     from services.azure_openai import chat_completion_json
@@ -38,15 +39,16 @@ except ImportError:
 # Prompt
 # ---------------------------------------------------------------------------
 
-ORCHESTRATOR_SYSTEM_PROMPT = """You are a classroom orchestrator for TeachLab, an AI flight simulator for teachers.
+_PERSONA_LINES = "\n".join(
+    f"- {p.name:<12} ({p.archetype})  base_prob={p.response_probability}"
+    for p in PERSONAS.values()
+)
+
+ORCHESTRATOR_SYSTEM_PROMPT = f"""You are a classroom orchestrator for TeachLab, an AI flight simulator for teachers.
 Your job is to decide which students react to the teacher's input each turn.
 
 The classroom has 5 student personas with the following base response probabilities:
-- maya       (overachiever, eager)         base_prob=0.85
-- carlos     (ESL student, often confused) base_prob=0.60
-- jake       (class clown, distracted)     base_prob=0.55
-- priya      (anxious student)             base_prob=0.30
-- marcus     (checked out)                 base_prob=0.70
+{_PERSONA_LINES}
 
 Rules:
 1. Select 0–5 students to respond. Silence (0 responders) is realistic and valid.
@@ -59,11 +61,11 @@ Rules:
 5. Students who are bored or distracted are less likely to respond unprompted.
 
 Return ONLY valid JSON in this exact format:
-{
+{{
   "responders": [
-    {"student_id": "<id>", "reason": "<brief reason for selection>"}
+    {{"student_id": "<id>", "reason": "<brief reason for selection>"}}
   ]
-}
+}}
 
 The responders array may be empty. Do not include any text outside the JSON object.
 """
@@ -161,20 +163,14 @@ def _fallback_responders(session: SessionState) -> list[dict]:
     Heuristic fallback when the Azure OpenAI service is unavailable.
     Selects 0-1 students based on engagement and recency.
     """
-    base_probs = {
-        "maya": 0.85,
-        "carlos": 0.60,
-        "jake": 0.55,
-        "priya": 0.30,
-        "marcus": 0.70,
-    }
-
     candidates = []
     for sid, student in session.students.items():
         # Apply recency penalty
         if student.consecutive_turns_speaking >= 2:
             continue
-        prob = base_probs.get(sid, 0.5) * student.engagement
+        persona = PERSONAS.get(sid)
+        base_prob = persona.response_probability if persona else 0.5
+        prob = base_prob * student.engagement
         if random.random() < prob:
             candidates.append({"student_id": sid, "reason": "heuristic fallback"})
 
