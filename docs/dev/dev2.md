@@ -154,3 +154,34 @@ Before this fix, questions that got 0 GPT-selected responders would leave the te
 
 **Why it matters:**
 Previously the orchestrator hard-capped at 2 responders and all LLM calls ran in parallel, so students never saw each other's same-turn responses. Group instructions like "I'd like everyone to share 1 by 1" would get 2 responses max and no debate. Now all 5 students respond to group prompts and each one sees what the previous students said, producing natural classroom dynamics.
+
+---
+
+## Push 11 — Teaching Autopsy
+`2026-02-27`
+
+**Built:**
+
+**Backend:**
+- `agents/autopsy_agent.py` *(new)* — post-session diagnostic agent
+  - `_group_timeline_by_turn(timeline)` — groups the flat session timeline into teacher-turn buckets, each carrying the student responses (with `comprehension_delta` and `engagement_delta`) that followed that utterance
+  - `generate_autopsy(session)` — sends the grouped transcript to GPT-4o with a structured diagnostic prompt (temperature 0.3 for consistency); returns a list of per-turn annotations: `{turn, teacher_text, overall_impact, tip, student_impacts[]}` where each student impact has `{student, impact, sentiment}`; all 5 students are annotated per turn even if they did not speak
+  - `max_tokens` scales with session length: `max(1500, turns * 350)`, capped at 4000
+- `main.py` — two additions:
+  1. In the WebSocket loop, after responses are collected, student responses are now appended to `session.timeline` with their deltas (`speaker`, `text`, `comprehension_delta`, `engagement_delta`) — previously only teacher turns were logged; autopsy agent requires this data
+  2. In `POST /session/{session_id}/end`: `generate_feedback` and `generate_autopsy` now run concurrently via `asyncio.create_task`; autopsy result returned under key `"autopsy"` in the response body
+
+**Frontend:**
+- `store/sessionStore.ts` — added `AutopsyAnnotation` and `AutopsyStudentImpact` interfaces; added `autopsy: AutopsyAnnotation[] | null` to store state (reset on `startSession`); added `setAutopsy()` action
+- `components/Dashboard/TeachingAutopsy.tsx` *(new)* — collapsible turn-by-turn annotated transcript
+  - Summary bar: total turns / positive / mixed / negative counts
+  - Colour-coded student legend (violet Maya, orange Carlos, cyan Jake, pink Priya, emerald Marcus)
+  - One `TurnCard` per teacher turn: left border and impact badge colour-coded by `overall_impact` (green/red/yellow/gray); first card auto-expanded
+  - Per-student impact chips inside each card: student initial, sentiment dot (green/red/gray), and specific impact description
+  - Blue coaching tip pill shown only when GPT flags an improvement opportunity (`tip !== null`)
+  - Animated expand/collapse via `AnimatePresence` + `framer-motion`
+- `components/Dashboard/SessionReport.tsx` — imports `TeachingAutopsy`; calls `setAutopsy(data.autopsy)` when the `/end` response arrives; renders the Autopsy section between "AI Coaching Feedback" and "Conversation Log", sharing the same loading spinner
+
+**Affects other devs:**
+- `POST /session/{session_id}/end` response now includes an `"autopsy"` array alongside `"feedback"` and `"timeline"` — additive, no breaking change
+- `session.timeline` now contains student entries in addition to teacher entries — any code reading the timeline should filter by `entry["speaker"] == "teacher"` if it only wants teacher turns

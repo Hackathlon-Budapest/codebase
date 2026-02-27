@@ -8,6 +8,7 @@ interface Props {
 }
 
 const EMOTION_EMOJI: Record<EmotionalState, string> = {
+  curious: '🤔',
   eager: '🙋',
   confused: '😕',
   curious: '🤔',
@@ -19,6 +20,7 @@ const EMOTION_EMOJI: Record<EmotionalState, string> = {
 }
 
 const EMOTION_BORDER: Record<EmotionalState, string> = {
+  curious: 'border-blue-400',
   confused: 'border-yellow-400',
   curious: 'border-cyan-400',
   bored: 'border-gray-500',

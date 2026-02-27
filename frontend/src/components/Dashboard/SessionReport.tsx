@@ -4,9 +4,10 @@ import ReactMarkdown from 'react-markdown'
 import { useSessionStore } from '../../store/sessionStore'
 import { FeedbackCards } from './FeedbackCards'
 import { EngagementTimeline } from './EngagementTimeline'
+import { TeachingAutopsy } from './TeachingAutopsy'
 
 export function SessionReport() {
-  const { topic, grade_level, subject, conversation_log, students, reset, session_id, feedbackText, feedbackSummary, setFeedback } = useSessionStore()
+  const { topic, grade_level, subject, conversation_log, students, reset, session_id, feedbackText, feedbackSummary, setFeedback, setAutopsy } = useSessionStore()
   const [isFeedbackLoading, setIsFeedbackLoading] = useState(false)
   const [feedbackError, setFeedbackError] = useState<string | null>(null)
 
@@ -39,6 +40,7 @@ export function SessionReport() {
         data.feedback?.feedback ?? null,
         data.feedback?.summary ?? null,
       )
+      setAutopsy(data.autopsy ?? null)
     } catch (err) {
       setFeedbackError('Could not load feedback from backend.')
       console.error(err)
@@ -128,6 +130,20 @@ export function SessionReport() {
         )}
         {!isFeedbackLoading && !feedbackText && !feedbackError && (
           <p className="text-gray-500 text-sm">No feedback available.</p>
+        )}
+      </section>
+
+      {/* Teaching Autopsy */}
+      <section className="mb-8 bg-classroom-surface border border-classroom-border rounded-xl p-5">
+        <h2 className="text-lg font-semibold text-gray-300 mb-1">Teaching Autopsy</h2>
+        <p className="text-xs text-gray-500 mb-4">Turn-by-turn breakdown of what each utterance did to each student.</p>
+        {isFeedbackLoading ? (
+          <div className="flex items-center gap-3 text-gray-400 text-sm">
+            <div className="w-4 h-4 border-2 border-classroom-accent border-t-transparent rounded-full animate-spin" />
+            Analysing your lesson...
+          </div>
+        ) : (
+          <TeachingAutopsy />
         )}
       </section>
 
