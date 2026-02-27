@@ -19,18 +19,47 @@ const TOPIC_SUGGESTIONS = [
   'DNA and Genetics',
 ]
 
-export function SessionSetup() {
-  const { topic, grade_level, setTopic, setGradeLevel, startSession } = useSessionStore()
-  const [error, setError] = useState<string | null>(null)
+const SUBJECT_SUGGESTIONS = [
+  'Science', 'Mathematics', 'History',
+  'Biology', 'Physics', 'Economics', 'English',
+]
 
-  const handleStart = () => {
+export function SessionSetup() {
+  const { topic, grade_level, subject, setTopic, setGradeLevel, setSubject, startSession } = useSessionStore()
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleStart = async () => {
     if (!topic.trim() || !grade_level) {
       setError('Please enter a topic and select a grade level.')
       return
     }
     setError(null)
-    // TODO: replace with real API call once backend is running
-    startSession('test-session-123')
+    setIsLoading(true)
+
+    try {
+      const response = await fetch('http://localhost:8000/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: subject || 'General',
+          topic: topic.trim(),
+          grade_level,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      startSession(data.session_id)
+    } catch (err) {
+      setError('Could not connect to backend. Make sure the server is running on port 8000.')
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -46,6 +75,31 @@ export function SessionSetup() {
           <p className="text-gray-400">AI Classroom Simulator — practice teaching with 5 virtual students</p>
         </div>
 
+        {/* Subject input */}
+        <div className="mb-5">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Subject
+          </label>
+          <input
+            type="text"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="e.g. Science"
+            className="w-full bg-classroom-bg border border-classroom-border rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-classroom-accent transition-colors"
+          />
+          <div className="flex flex-wrap gap-2 mt-2">
+            {SUBJECT_SUGGESTIONS.map((s) => (
+              <button
+                key={s}
+                onClick={() => setSubject(s)}
+                className="text-xs px-2 py-1 rounded-full bg-classroom-border text-gray-400 hover:text-white hover:bg-classroom-accent transition-colors"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Topic input */}
         <div className="mb-5">
           <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -58,7 +112,6 @@ export function SessionSetup() {
             placeholder="e.g. The Water Cycle"
             className="w-full bg-classroom-bg border border-classroom-border rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-classroom-accent transition-colors"
           />
-          {/* Suggestions */}
           <div className="flex flex-wrap gap-2 mt-2">
             {TOPIC_SUGGESTIONS.map((s) => (
               <button
@@ -102,9 +155,10 @@ export function SessionSetup() {
         {/* Start button */}
         <button
           onClick={handleStart}
-          className="w-full py-3 rounded-xl bg-classroom-accent hover:bg-blue-500 text-white font-semibold text-lg transition-colors"
+          disabled={isLoading}
+          className="w-full py-3 rounded-xl bg-classroom-accent hover:bg-blue-500 text-white font-semibold text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Start Class
+          {isLoading ? 'Starting...' : 'Start Class'}
         </button>
 
         {/* Student preview */}

@@ -13,10 +13,13 @@ const EMOTION_COLORS: Record<EmotionalState, string> = {
   bored: '#6b7280',
   frustrated: '#ef4444',
   engaged: '#22c55e',
+  eager: '#a78bfa',
+  anxious: '#fb923c',
+  distracted: '#9ca3af',
 }
 
 export function EngagementBar({ label, value, emotion }: Props) {
-  const color = EMOTION_COLORS[emotion]
+  const color = EMOTION_COLORS[emotion] ?? '#60a5fa'
 
   return (
     <div className="w-full">

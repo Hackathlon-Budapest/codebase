@@ -1,13 +1,55 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useSessionStore } from '../../store/sessionStore'
 import { FeedbackCards } from './FeedbackCards'
 import { EngagementTimeline } from './EngagementTimeline'
 
 export function SessionReport() {
-  const { topic, grade_level, conversation_log, students, reset } = useSessionStore()
+  const { topic, grade_level, subject, conversation_log, students, reset, session_id, feedbackText, feedbackSummary, setFeedback } = useSessionStore()
+  const [isFeedbackLoading, setIsFeedbackLoading] = useState(false)
+  const [feedbackError, setFeedbackError] = useState<string | null>(null)
 
   const teacherTurns = conversation_log.filter((e) => e.speaker === 'Teacher')
   const studentTurns = conversation_log.filter((e) => e.speaker !== 'Teacher')
+
+  // Normalize engagement/comprehension: backend sends 0-1, we need 0-100
+  const normalizedStudents = Object.fromEntries(
+    Object.entries(students).map(([id, s]) => [
+      id,
+      {
+        ...s,
+        engagement: s.engagement <= 1 ? Math.round(s.engagement * 100) : Math.round(s.engagement),
+        comprehension: s.comprehension <= 1 ? Math.round(s.comprehension * 100) : Math.round(s.comprehension),
+      },
+    ])
+  )
+
+  const fetchFeedback = async () => {
+    if (!session_id || feedbackText) return
+    setIsFeedbackLoading(true)
+    setFeedbackError(null)
+    try {
+      const response = await fetch(`http://localhost:8000/session/${session_id}/end`, {
+        method: 'POST',
+      })
+      if (!response.ok) throw new Error(`Server error: ${response.status}`)
+      const data = await response.json()
+      setFeedback(
+        data.feedback?.coaching_text ?? data.feedback ?? null,
+        data.feedback?.summary ?? null,
+      )
+    } catch (err) {
+      setFeedbackError('Could not load feedback from backend.')
+      console.error(err)
+    } finally {
+      setIsFeedbackLoading(false)
+    }
+  }
+
+  // Auto-fetch feedback on mount if not already loaded
+  if (!feedbackText && !isFeedbackLoading && !feedbackError && session_id) {
+    fetchFeedback()
+  }
 
   return (
     <motion.div
@@ -19,7 +61,7 @@ export function SessionReport() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Session Report</h1>
         <p className="text-gray-400 mt-1">
-          {topic} · {grade_level} · {teacherTurns.length} teacher turns · {studentTurns.length} student responses
+          {subject ? `${subject} · ` : ''}{topic} · {grade_level} · {teacherTurns.length} teacher turns · {studentTurns.length} student responses
         </p>
       </div>
 
@@ -39,7 +81,7 @@ export function SessionReport() {
       <section className="mb-8">
         <h2 className="text-lg font-semibold text-gray-300 mb-4">Student Summary</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {Object.values(students).map((s) => (
+          {Object.values(normalizedStudents).map((s) => (
             <div
               key={s.id}
               className="bg-classroom-surface border border-classroom-border rounded-xl p-4 flex items-center gap-4"
@@ -58,6 +100,28 @@ export function SessionReport() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* GPT Coaching Feedback */}
+      <section className="mb-8 bg-classroom-surface border border-classroom-border rounded-xl p-5">
+        <h2 className="text-lg font-semibold text-gray-300 mb-4">AI Coaching Feedback</h2>
+        {isFeedbackLoading && (
+          <div className="flex items-center gap-3 text-gray-400 text-sm">
+            <div className="w-4 h-4 border-2 border-classroom-accent border-t-transparent rounded-full animate-spin" />
+            Generating feedback...
+          </div>
+        )}
+        {feedbackError && (
+          <p className="text-red-400 text-sm">{feedbackError}</p>
+        )}
+        {feedbackText && (
+          <pre className="text-gray-300 text-sm whitespace-pre-wrap font-sans leading-relaxed">
+            {feedbackText}
+          </pre>
+        )}
+        {!isFeedbackLoading && !feedbackText && !feedbackError && (
+          <p className="text-gray-500 text-sm">No feedback available.</p>
+        )}
       </section>
 
       {/* Conversation log */}
