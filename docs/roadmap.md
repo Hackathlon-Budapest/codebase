@@ -7,7 +7,7 @@
 | Dev   | Role                 | Owns                                                 |
 |-------|----------------------|------------------------------------------------------|
 | Dev 1 | Backend Lead         | Orchestrator, agent logic, session state             |
-| Dev 2 | Azure Integration    | STT/TTS pipeline, sentiment, OpenAI service wrappers |
+| Dev 2 | Azure Integration    | STT/TTS pipeline, OpenAI service wrappers            |
 | Dev 3 | Frontend Lead        | Classroom UI, avatars, WebSocket, real-time updates  |
 | Dev 4 | Frontend + Dashboard | Session setup, post-session dashboard, UX polish     |
 
@@ -27,7 +27,7 @@ HOURS 4-8: CORE PIPELINE
   Dev 4: Connect setup form to backend session init
 
 HOURS 8-14: INTEGRATION SPRINT
-  Dev 1+2: Connect orchestrator to student agents + sentiment scoring
+  Dev 1+2: Connect orchestrator to student agents
   Dev 3+4: Wire WebSocket events to UI (avatar reacts, engagement updates live)
   MILESTONE: First full loop — teacher speaks → students react → UI updates
 
@@ -68,6 +68,5 @@ HOURS 26-30: BUFFER + REHEARSAL
 
 ### Cut If Needed
 
-- Azure Sentiment API (can fake sentiment from GPT-4o output instead)
 - Webcam/video elements
 - Persistent session history / database

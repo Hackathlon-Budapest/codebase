@@ -44,4 +44,3 @@ A judge watches you speak to a mic and suddenly five AI students react — one l
 - Azure TTS (student voices — different per avatar)
 - Real-time classroom UI (React, showing student avatars + engagement signals)
 - Post-session feedback dashboard
-- Azure Cognitive Services sentiment/emotion on student responses

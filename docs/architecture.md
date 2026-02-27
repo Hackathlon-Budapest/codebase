@@ -47,12 +47,6 @@
 │  │ (Teacher     │  │ (Student     │  │  Orchestrator +       │  │
 │  │  voice in)   │  │  voices out) │  │  All Agents           │  │
 │  └──────────────┘  └──────────────┘  └───────────────────────┘  │
-│                                                                 │
-│              ┌──────────────────────────────┐                   │
-│              │  Azure Language / Sentiment  │                   │
-│              │  (Emotion tagging on student │                   │
-│              │   responses for analytics)   │                   │
-│              └──────────────────────────────┘                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -91,8 +85,7 @@ teachlab/
 │   │   └── personas.py                    # All 5 persona definitions
 │   ├── services/
 │   │   ├── azure_openai.py                # GPT-4o wrapper
-│   │   ├── azure_speech.py                # STT + TTS
-│   │   └── azure_sentiment.py             # Emotion tagging
+│   │   └── azure_speech.py                # STT + TTS
 │   ├── models/
 │   │   └── session.py                     # Pydantic state models
 │   ├── api/
