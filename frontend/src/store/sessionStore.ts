@@ -55,6 +55,9 @@ export interface SessionStore {
   feedbackText: string | null
   feedbackSummary: string | null
 
+  // Whisper Coach
+  coachingHint: string | null
+
   // Connection state
   isConnected: boolean
   isProcessing: boolean
@@ -71,6 +74,7 @@ export interface SessionStore {
   setProcessing: (processing: boolean) => void
   setError: (message: string | null) => void
   setFeedback: (text: string | null, summary: string | null) => void
+  setCoachingHint: (hint: string | null) => void
   updateStudentState: (studentId: StudentId, updates: Partial<StudentState>) => void
   addConversationEntry: (entry: ConversationEntry) => void
   addEngagementSnapshot: (snapshot: EngagementSnapshot) => void
@@ -147,6 +151,7 @@ const INITIAL_STATE = {
   isConnected: false,
   isProcessing: false,
   errorMessage: null,
+  coachingHint: null,
 }
 
 export const useSessionStore = create<SessionStore>((set) => ({
@@ -165,6 +170,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
       engagementHistory: [],
       feedbackText: null,
       feedbackSummary: null,
+      coachingHint: null,
     }),
 
   endSession: () => set({ view: 'dashboard', isProcessing: false }),
@@ -178,6 +184,8 @@ export const useSessionStore = create<SessionStore>((set) => ({
   setError: (errorMessage) => set({ errorMessage }),
 
   setFeedback: (feedbackText, feedbackSummary) => set({ feedbackText, feedbackSummary }),
+
+  setCoachingHint: (coachingHint) => set({ coachingHint }),
 
   updateStudentState: (studentId, updates) =>
     set((state) => ({

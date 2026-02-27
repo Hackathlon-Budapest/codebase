@@ -11,7 +11,7 @@ from models import (
     StudentResponse, StateUpdate,
     SessionEndMessage, ErrorMessage, EmotionalState
 )
-from agents.orchestrator import decide_responders, update_student_states
+from agents.orchestrator import decide_responders, update_student_states, generate_coaching_hint
 from agents.student_agent import generate_response
 from services.azure_speech import text_to_speech, speech_to_text
 from agents.feedback_agent import generate_feedback
@@ -174,7 +174,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     }
                     for sid, s in session.students.items()
                 }
-                await websocket.send_text(StateUpdate(turn=session.turn_count, students=state_snapshot).model_dump_json())
+                coaching_hint = generate_coaching_hint(session)
+                await websocket.send_text(
+                    StateUpdate(
+                        turn=session.turn_count,
+                        students=state_snapshot,
+                        coaching_hint=coaching_hint,
+                    ).model_dump_json()
+                )
             elif data.get("type") == "session_end":
                 await websocket.send_text(SessionEndMessage(session_id=session_id).model_dump_json())
                 break

@@ -225,6 +225,67 @@ def _clamp(value: float, lo: float = 0.0, hi: float = 1.0) -> float:
 
 
 # ---------------------------------------------------------------------------
+# generate_coaching_hint
+# ---------------------------------------------------------------------------
+
+def generate_coaching_hint(session: SessionState) -> str:
+    """
+    Pure rule-based coaching hint. No LLM call. First-match priority.
+    """
+    students = session.students
+
+    # Priority 1: any student is confused
+    for sid, student in students.items():
+        if student.emotional_state == EmotionalState.confused:
+            return f"💡 {student.name} looks confused — try simplifying your language"
+
+    # Priority 2: low engagement + bored/distracted
+    for sid, student in students.items():
+        if student.engagement < 0.35 and student.emotional_state in (
+            EmotionalState.bored, EmotionalState.distracted
+        ):
+            return f"⚠️ {student.name} is disengaging — try calling on them directly"
+
+    # Priority 3: student hasn't spoken in last 5 teacher turns
+    # Find non-teacher speakers in the last 5 teacher-turn entries
+    teacher_turns = [e for e in session.timeline if e.get("speaker") == "teacher"]
+    cutoff_turn = teacher_turns[-5]["turn"] if len(teacher_turns) >= 5 else 0
+    recent_speakers = {
+        e["speaker"]
+        for e in session.timeline
+        if e.get("speaker") != "teacher" and e.get("turn", 0) >= cutoff_turn
+    }
+    for sid, student in students.items():
+        if sid not in recent_speakers:
+            return f"⚠️ {student.name} hasn't spoken in a while — consider calling on them"
+
+    # Priority 4: student just re-engaged (was bored/distracted last turn, now engaged & high)
+    # Check by looking at the second-to-last timeline entry for each student
+    student_timeline: dict[str, list[dict]] = {sid: [] for sid in students}
+    for event in session.timeline:
+        spk = event.get("speaker")
+        if spk and spk in student_timeline:
+            student_timeline[spk].append(event)
+
+    for sid, student in students.items():
+        if (
+            student.emotional_state == EmotionalState.engaged
+            and student.engagement > 0.65
+            and len(student_timeline[sid]) >= 2
+        ):
+            prev = student_timeline[sid][-2]
+            if prev.get("emotional_state") in ("bored", "distracted"):
+                return f"✅ {student.name} just re-engaged — keep the energy up"
+
+    # Priority 5: all students highly engaged
+    if all(s.engagement >= 0.65 for s in students.values()):
+        return "✅ Class is engaged — great pacing, keep it up"
+
+    # Default fallback
+    return "💡 Keep checking in with individual students"
+
+
+# ---------------------------------------------------------------------------
 # get_session_summary
 # ---------------------------------------------------------------------------
 

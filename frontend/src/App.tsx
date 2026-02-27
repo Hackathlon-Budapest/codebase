@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useSessionStore } from './store/sessionStore'
 import { SessionSetup } from './components/TeacherControls/SessionSetup'
 import { ClassroomLayout } from './components/ClassroomView/ClassroomLayout'
+import { WhisperCoach } from './components/ClassroomView/WhisperCoach'
 import { MicButton } from './components/TeacherControls/MicButton'
 import { SessionReport } from './components/Dashboard/SessionReport'
 import { useWebSocket } from './hooks/useWebSocket'
@@ -67,6 +68,9 @@ function ClassroomView() {
 
           {/* Quick stats */}
           <QuickStats />
+
+          {/* Whisper Coach */}
+          <WhisperCoach />
         </aside>
       </main>
     </motion.div>
