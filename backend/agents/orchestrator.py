@@ -24,9 +24,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import SessionState, EmotionalState
 
 try:
-    from services.azure_openai import chat_completion
+    from services.azure_openai import chat_completion_json
 except ImportError:
-    chat_completion = None  # Dev 2's module not yet ready
+    chat_completion_json = None  # Dev 2's module not yet ready
 
 try:
     from agents.student_agent import generate_response
@@ -103,17 +103,10 @@ async def decide_responders(teacher_input: str, session: SessionState) -> list[d
     ]
 
     # --- Call GPT-4o orchestrator ---
-    if chat_completion is not None:
+    if chat_completion_json is not None:
         try:
-            result = await chat_completion(messages, json_mode=True)
-            # result is expected to be the parsed JSON dict or have a content field
-            if isinstance(result, dict) and "responders" in result:
-                raw_responders = result["responders"]
-            elif isinstance(result, dict) and "content" in result:
-                parsed = json.loads(result["content"])
-                raw_responders = parsed.get("responders", [])
-            else:
-                raw_responders = []
+            result = await chat_completion_json(messages)
+            raw_responders = result.get("responders", [])
         except Exception:
             raw_responders = _fallback_responders(session)
     else:

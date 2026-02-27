@@ -35,7 +35,7 @@ export function SessionReport() {
       if (!response.ok) throw new Error(`Server error: ${response.status}`)
       const data = await response.json()
       setFeedback(
-        data.feedback?.coaching_text ?? data.feedback ?? null,
+        data.feedback?.feedback ?? null,
         data.feedback?.summary ?? null,
       )
     } catch (err) {
