@@ -8,12 +8,14 @@ export function ClassroomLayout() {
   const students = useSessionStore((s) => s.students)
   const conversation_log = useSessionStore((s) => s.conversation_log)
 
-  // Get last message per student
+  // Get last message + timestamp key per student
   const lastMessages: Partial<Record<StudentId, string>> = {}
+  const lastKeys: Partial<Record<StudentId, string>> = {}
   for (const entry of [...conversation_log].reverse()) {
     const id = entry.speaker.toLowerCase() as StudentId
     if (STUDENT_ORDER.includes(id) && !lastMessages[id]) {
       lastMessages[id] = entry.text
+      lastKeys[id] = entry.timestamp
     }
   }
 
@@ -28,7 +30,7 @@ export function ClassroomLayout() {
         <div className="flex gap-4 justify-center">
           {STUDENT_ORDER.slice(0, 3).map((id) => (
             <div key={id} className="relative">
-              <StudentAvatar student={students[id]} lastMessage={lastMessages[id]} />
+              <StudentAvatar student={students[id]} lastMessage={lastMessages[id]} messageKey={lastKeys[id]} />
             </div>
           ))}
         </div>
@@ -36,7 +38,7 @@ export function ClassroomLayout() {
         <div className="flex gap-4 justify-center">
           {STUDENT_ORDER.slice(3).map((id) => (
             <div key={id} className="relative">
-              <StudentAvatar student={students[id]} lastMessage={lastMessages[id]} />
+              <StudentAvatar student={students[id]} lastMessage={lastMessages[id]} messageKey={lastKeys[id]} />
             </div>
           ))}
         </div>

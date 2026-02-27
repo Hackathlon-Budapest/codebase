@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type EmotionalState = 'curious' | 'confused' | 'bored' | 'frustrated' | 'engaged'
+export type EmotionalState = 'eager' | 'confused' | 'distracted' | 'anxious' | 'bored' | 'engaged' | 'frustrated'
 
 export type StudentId = 'maya' | 'carlos' | 'jake' | 'priya' | 'marcus'
 
@@ -13,6 +13,15 @@ export interface StudentState {
   emotional_state: EmotionalState
   voice_id: string
   response_history: ConversationEntry[]
+}
+
+export interface EngagementSnapshot {
+  turn: number
+  maya: number
+  carlos: number
+  jake: number
+  priya: number
+  marcus: number
 }
 
 export interface ConversationEntry {
@@ -38,6 +47,8 @@ export interface SessionStore {
   // Conversation log
   conversation_log: ConversationEntry[]
   timeline: ConversationEntry[]
+  engagementHistory: EngagementSnapshot[]
+  turnCount: number
 
   // Connection state
   isConnected: boolean
@@ -56,6 +67,7 @@ export interface SessionStore {
   updateStudentState: (studentId: StudentId, updates: Partial<StudentState>) => void
   addConversationEntry: (entry: ConversationEntry) => void
   applyStateUpdate: (students: Partial<Record<StudentId, Partial<StudentState>>>) => void
+  addEngagementSnapshot: (snapshot: EngagementSnapshot) => void
   reset: () => void
 }
 
@@ -76,7 +88,7 @@ const INITIAL_STUDENTS: Record<StudentId, StudentState> = {
     persona: 'ESL student — asks for clarification, prefers simpler language. Shuts down if vocabulary is too complex.',
     comprehension: 55,
     engagement: 60,
-    emotional_state: 'curious',
+    emotional_state: 'confused',
     voice_id: 'es-MX-JorgeNeural',
     response_history: [],
   },
@@ -96,7 +108,7 @@ const INITIAL_STUDENTS: Record<StudentId, StudentState> = {
     persona: 'Anxious / quiet — rarely speaks unless directly called on. Blooms with encouragement, shuts down under pressure.',
     comprehension: 75,
     engagement: 50,
-    emotional_state: 'curious',
+    emotional_state: 'anxious',
     voice_id: 'en-IN-NeerjaNeural',
     response_history: [],
   },
@@ -106,7 +118,7 @@ const INITIAL_STUDENTS: Record<StudentId, StudentState> = {
     persona: 'Skeptical critical thinker — challenges assumptions, tends to debate. Engages when given agency to question things.',
     comprehension: 80,
     engagement: 65,
-    emotional_state: 'curious',
+    emotional_state: 'engaged',
     voice_id: 'en-US-DavisNeural',
     response_history: [],
   },
@@ -120,6 +132,8 @@ export const useSessionStore = create<SessionStore>((set) => ({
   students: INITIAL_STUDENTS,
   conversation_log: [],
   timeline: [],
+  engagementHistory: [],
+  turnCount: 0,
   isConnected: false,
   isProcessing: false,
   errorMessage: null,
@@ -163,8 +177,24 @@ export const useSessionStore = create<SessionStore>((set) => ({
           nextStudents[sid] = { ...nextStudents[sid], ...patch }
         }
       }
-      return { students: nextStudents }
+      const newTurn = state.turnCount + 1
+      const snapshot: EngagementSnapshot = {
+        turn: newTurn,
+        maya: nextStudents.maya.engagement,
+        carlos: nextStudents.carlos.engagement,
+        jake: nextStudents.jake.engagement,
+        priya: nextStudents.priya.engagement,
+        marcus: nextStudents.marcus.engagement,
+      }
+      return {
+        students: nextStudents,
+        turnCount: newTurn,
+        engagementHistory: [...state.engagementHistory, snapshot],
+      }
     }),
+
+  addEngagementSnapshot: (snapshot) =>
+    set((state) => ({ engagementHistory: [...state.engagementHistory, snapshot] })),
 
   reset: () =>
     set({
@@ -175,6 +205,8 @@ export const useSessionStore = create<SessionStore>((set) => ({
       students: INITIAL_STUDENTS,
       conversation_log: [],
       timeline: [],
+      engagementHistory: [],
+      turnCount: 0,
       isConnected: false,
       isProcessing: false,
       errorMessage: null,

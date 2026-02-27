@@ -8,11 +8,13 @@ interface Props {
 }
 
 const EMOTION_COLORS: Record<EmotionalState, string> = {
-  curious: '#60a5fa',
+  eager: '#facc15',
   confused: '#f59e0b',
+  distracted: '#f97316',
+  anxious: '#a78bfa',
   bored: '#6b7280',
-  frustrated: '#ef4444',
   engaged: '#22c55e',
+  frustrated: '#ef4444',
 }
 
 export function EngagementBar({ label, value, emotion }: Props) {
