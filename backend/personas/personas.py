@@ -7,7 +7,7 @@ speech patterns, and behavioral characteristics.
 from dataclasses import dataclass
 from typing import Literal
 
-EmotionalState = Literal["curious", "confused", "bored", "frustrated", "engaged"]
+EmotionalState = Literal["eager", "confused", "bored", "frustrated", "engaged", "anxious", "distracted"]
 
 
 @dataclass
@@ -459,7 +459,7 @@ def get_initial_student_state(name: str) -> dict:
         "persona": persona.system_prompt,
         "comprehension": persona.initial_comprehension,
         "engagement": persona.initial_engagement,
-        "emotional_state": "curious",  # All students start curious
+        "emotional_state": "engaged",  # Default valid initial state
         "voice_id": persona.voice_id,
         "response_history": [],
     }

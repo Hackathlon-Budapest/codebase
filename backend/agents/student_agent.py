@@ -84,7 +84,7 @@ Your response length should be {persona.response_length[0]}-{persona.response_le
 Provide your response as JSON with these fields:
 {{
   "text": "What you say (or empty string if you stay silent)",
-  "emotional_state": "curious|confused|bored|frustrated|engaged",
+  "emotional_state": "eager|confused|bored|frustrated|engaged|anxious|distracted",
   "comprehension_delta": <integer -20 to +20, how this affected your understanding>,
   "engagement_delta": <integer -20 to +20, how this affected your engagement>
 }}
@@ -149,7 +149,7 @@ async def generate_response(
     engagement_delta = _clamp(int(response_data.get("engagement_delta", 0)), -20, 20)
 
     # Validate emotional state
-    valid_emotions = {"curious", "confused", "bored", "frustrated", "engaged"}
+    valid_emotions = {"eager", "confused", "bored", "frustrated", "engaged", "anxious", "distracted"}
     if emotional_state not in valid_emotions:
         emotional_state = state.emotional_state
 
