@@ -33,3 +33,38 @@
 **Note:** Sentiment integration was scoped and then dropped — `azure_sentiment.py` removed from the stack by Dev 3 (azure-setup PR). Emotional state comes from the LLM's self-reported value only.
 
 **Next:** Sequential audio delivery
+
+---
+
+## Push 3 — STT integration + sequential audio queue SPRINT 1
+`2026-02-27`
+
+**Built:**
+- `services/azure_speech.py` — restructured `speech_to_text()`:
+  - Tries Azure STT first if `AZURE_SPEECH_KEY` is set (PCM/WAV bytes)
+  - Falls back to **local faster-whisper** (`"tiny"` model, CPU/int8) which handles WebM/Opus natively — this is what the browser's MediaRecorder outputs
+  - Model is lazy-loaded on first STT call and cached at module level; first-time download ~30s, subsequent calls fast
+- `main.py` — added `POST /stt` endpoint:
+  - Accepts `{ audio_base64: str }`, decodes, calls `speech_to_text()`, returns `{ text: str }`
+  - Added `import base64`, `from pydantic import BaseModel`, `STTRequest` model inline
+  - Imported `speech_to_text` from `azure_speech`
+- `components/TeacherControls/MicButton.tsx` — replaced `'[audio]'` placeholder:
+  - Calls `POST /stt` after recording stops, sends transcribed text via `sendTeacherInput()`
+  - Added `isTranscribing` local state; button shows `…` and is disabled during STT call
+  - Shows error message if transcription returns empty string
+  - Reads `VITE_API_URL` env var with `http://localhost:8000` fallback
+- `hooks/useWebSocket.ts` — sequential audio queue:
+  - Replaced immediate `audio.play()` with a ref-based queue (`audioQueueRef`, `isPlayingRef`, `playNextRef`)
+  - Each `student_response` audio is enqueued; next clip plays only after current one ends (or errors)
+  - Prevents overlapping student voices when multiple students respond in the same turn
+- `src/vite-env.d.ts` — created (was missing); adds `/// <reference types="vite/client" />` for `import.meta.env` types
+
+**Affects other devs:**
+- `POST /stt` is now available at `http://localhost:8000/stt` — no auth, CORS open
+- TTS audio is now played sequentially; frontend handles queueing, no backend change needed
+- `VITE_API_URL` env var can be set in `.env` to point frontend at a non-localhost backend
+
+**Note on faster-whisper:**
+- Model files cached in `~/.cache/huggingface/hub/` after first download
+- Run backend once before demo to warm up the model: first `/stt` call triggers download
+- Azure STT still takes priority if `AZURE_SPEECH_KEY` is set, but WebM format will likely fail silently and fall through to whisper anyway
