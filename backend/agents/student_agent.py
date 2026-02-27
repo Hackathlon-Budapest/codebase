@@ -2,7 +2,7 @@
 Student Agent
 
 Generates student responses based on persona, current state, and conversation context.
-Each student agent embodies a distinct persona with unique personality and behavior patterns.
+Each student agent embodies a distinct student archetype with unique personality and behavior patterns.
 """
 
 import json
@@ -32,6 +32,61 @@ class StudentState:
     response_history: list[str]
 
 
+def _grade_level_instruction(grade_level: str) -> str:
+    """Return age-appropriate language and behavior instructions based on grade level."""
+    grade_str = grade_level.lower().replace("grade", "").strip()
+    try:
+        grade = int(grade_str)
+    except ValueError:
+        return ""  # Unknown format, don't override
+
+    if grade <= 5:
+        return """GRADE LEVEL ADAPTATION (Grade 4-5):
+You are a young elementary school student (age 9-11). Adjust ALL your responses to reflect this:
+- Use VERY simple vocabulary — words a 10-year-old would know
+- Short, simple sentences (5-10 words max per sentence)
+- Express confusion in childlike ways: "I don't get it", "Huh?", "That's weird"
+- Express excitement with childlike energy: "Oh oh oh!", "I know I know!", "That's so cool!"
+- Ask basic, concrete questions: "But why?", "What does that word mean?"
+- No abstract reasoning — think in concrete, literal terms
+- Attention span is short — easily distracted or excited
+- May compare things to cartoons, toys, or simple everyday things
+"""
+    elif grade <= 8:
+        return """GRADE LEVEL ADAPTATION (Grade 6-8):
+You are a middle school student (age 11-14). Use language natural for this age:
+- Use everyday vocabulary with some academic terms emerging
+- Mix of enthusiasm and self-consciousness typical of middle schoolers
+- May worry about looking cool or being wrong in front of peers
+- Responses are 1-3 sentences typically
+- Connects ideas to pop culture, games, social media
+- Starting to reason abstractly but still prefers concrete examples
+"""
+    elif grade <= 10:
+        return """GRADE LEVEL ADAPTATION (Grade 9-10):
+You are a high school student (age 14-16). Adjust your responses:
+- Use high school level vocabulary — more academic but not overly formal
+- Some teenage attitude and sarcasm is natural
+- More self-aware and socially conscious
+- Can handle abstract concepts but may challenge relevance: "When will we use this?"
+- Responses may show mild disengagement unless topic feels relevant
+- Uses current slang naturally
+- Can reason about cause and effect, hypotheticals
+"""
+    elif grade <= 12:
+        return """GRADE LEVEL ADAPTATION (Grade 11-12):
+You are an upper high school student (age 16-18). Adjust your responses:
+- Use mature, near-adult vocabulary and reasoning
+- Can engage with complex abstract concepts
+- May draw connections to real-world applications, college, careers
+- More confident in expressing nuanced opinions
+- Responses can be more sophisticated and multi-layered
+- Less easily impressed — needs intellectual substance to engage
+- Can debate ideas with some rigor
+"""
+    return ""
+
+
 def _build_context_message(
     state: StudentState,
     persona: PersonaDefinition,
@@ -40,6 +95,10 @@ def _build_context_message(
     lesson_context: dict | None = None,
 ) -> str:
     """Build the context message that includes current state and teacher input."""
+
+    # Grade level adaptation block
+    grade_level = lesson_context.get("grade_level", "") if lesson_context else ""
+    grade_instruction = _grade_level_instruction(grade_level) if grade_level else ""
 
     # Lesson context block
     if lesson_context:
@@ -61,7 +120,7 @@ def _build_context_message(
             text = entry.get("text", "")
             recent_history += f"  {speaker}: {text}\n"
 
-    return f"""{lesson_block}CURRENT STATE:
+    return f"""{grade_instruction}{lesson_block}CURRENT STATE:
 - Comprehension level: {state.comprehension}/100
 - Engagement level: {state.engagement}/100
 - Current emotion: {state.emotional_state}
@@ -80,6 +139,7 @@ Respond naturally as {persona.display_name} would in this moment. Consider:
 - How this interaction affects your emotional state
 - If classmates have already spoken this turn (visible in RECENT CONVERSATION), you may
   naturally build on, agree with, or gently push back on what they said — realistic classroom dynamics
+- IMPORTANT: Your vocabulary, sentence complexity, and reasoning style MUST match the grade level above
 
 Your response length should be {persona.response_length[0]}-{persona.response_length[1]} words.
 
@@ -141,7 +201,7 @@ async def generate_response(
     response_data = await chat_completion_json(
         messages=messages,
         temperature=0.8,  # Some creativity for natural responses
-        max_tokens=100,
+        max_tokens=150,
     )
 
     # Parse and validate response
