@@ -78,6 +78,8 @@ Respond naturally as {persona.display_name} would in this moment. Consider:
 - Your personality and typical speech patterns
 - Whether you would even speak right now (you might stay quiet)
 - How this interaction affects your emotional state
+- If classmates have already spoken this turn (visible in RECENT CONVERSATION), you may
+  naturally build on, agree with, or gently push back on what they said — realistic classroom dynamics
 
 Your response length should be {persona.response_length[0]}-{persona.response_length[1]} words.
 

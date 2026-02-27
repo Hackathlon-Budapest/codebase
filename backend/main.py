@@ -113,11 +113,13 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     "grade_level": session.config.grade_level,
                 }
 
-                async def _respond(responder: dict) -> dict | None:
+                # Sequential processing — each student sees prior same-turn responses (enables debates)
+                responses = []
+                for responder in responders:
                     sid = responder["student_id"]
                     student = session.students.get(sid)
                     if not student:
-                        return None
+                        continue
                     student_dict = {
                         "name": student.name,
                         "comprehension": round(student.comprehension * 100),
@@ -125,9 +127,24 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                         "emotional_state": student.emotional_state.value,
                         "response_history": [],
                     }
-                    resp = await generate_response(student_dict, teacher_text, session.timeline, lesson_context)
-                    audio = await text_to_speech(resp.text, student.voice_id)
-                    return {
+                    # Include this turn's already-sent responses so later students can debate
+                    live_history = list(session.timeline) + [
+                        {"speaker": r["student_name"], "text": r["text"]}
+                        for r in responses if r["text"].strip()
+                    ]
+                    try:
+                        resp = await asyncio.wait_for(
+                            generate_response(student_dict, teacher_text, live_history, lesson_context),
+                            timeout=10.0
+                        )
+                        audio = await asyncio.wait_for(
+                            text_to_speech(resp.text, student.voice_id),
+                            timeout=8.0
+                        )
+                    except asyncio.TimeoutError:
+                        continue
+
+                    result = {
                         "student_id": sid,
                         "student_name": student.name,
                         "voice_id": student.voice_id,
@@ -137,32 +154,20 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                         "engagement_delta": resp.engagement_delta,
                         "audio_base64": audio,
                     }
+                    responses.append(result)
 
-                try:
-                    results = await asyncio.wait_for(
-                        asyncio.gather(*[_respond(r) for r in responders]),
-                        timeout=15.0
-                    )
-                except asyncio.TimeoutError:
-                    await websocket.send_text(ErrorMessage(message="Response timed out. Please try again.").model_dump_json())
-                    continue
-                responses = [r for r in results if r]
-
-                # 3. Push each student response to the frontend (skip silent turns)
-                for resp in responses:
-                    if not resp["text"].strip():
-                        continue  # LLM chose to stay silent — don't emit an empty log entry
-                    student = session.students[resp["student_id"]]
-                    msg = StudentResponse(
-                        student_id=resp["student_id"],
-                        student_name=resp["student_name"],
-                        text=resp["text"],
-                        emotional_state=EmotionalState(resp["emotional_state"]),
-                        engagement=student.engagement,
-                        comprehension=student.comprehension,
-                        audio_base64=resp["audio_base64"],
-                    )
-                    await websocket.send_text(msg.model_dump_json())
+                    # 3. Send each response immediately as generated (skip silent turns)
+                    if resp.text.strip():
+                        msg = StudentResponse(
+                            student_id=sid,
+                            student_name=student.name,
+                            text=resp.text,
+                            emotional_state=EmotionalState(resp.emotional_state),
+                            engagement=student.engagement,
+                            comprehension=student.comprehension,
+                            audio_base64=audio,
+                        )
+                        await websocket.send_text(msg.model_dump_json())
 
                 # 4. Update session state with deltas from this turn
                 update_student_states(session, responses)
