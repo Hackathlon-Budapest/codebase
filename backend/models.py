@@ -59,6 +59,7 @@ class StudentResponse(BaseModel):
 
 class StateUpdate(BaseModel):
     type: str = "state_update"
+    turn: int
     students: dict[str, dict]
 
 
