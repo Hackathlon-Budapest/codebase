@@ -76,8 +76,8 @@ function ClassroomView() {
 function QuickStats() {
   const students = useSessionStore((s) => s.students)
   const studentList = Object.values(students)
-  const avgEng = Math.round(studentList.reduce((a, s) => a + s.engagement, 0) / studentList.length)
-  const avgComp = Math.round(studentList.reduce((a, s) => a + s.comprehension, 0) / studentList.length)
+  const avgEng = Math.round((studentList.reduce((a, s) => a + s.engagement, 0) / studentList.length) * (studentList[0]?.engagement <= 1 ? 100 : 1))
+  const avgComp = Math.round((studentList.reduce((a, s) => a + s.comprehension, 0) / studentList.length) * (studentList[0]?.comprehension <= 1 ? 100 : 1))
 
   return (
     <div className="border-t border-classroom-border pt-4 space-y-2 text-sm">
