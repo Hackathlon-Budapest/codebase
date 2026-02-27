@@ -1,17 +1,17 @@
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
 import type { StudentState, EmotionalState } from '../../store/sessionStore'
 import { EngagementBar } from './EngagementBar'
 
 interface Props {
   student: StudentState
-  messageKey?: string
+  showBubble?: boolean
 }
 
 const EMOTION_EMOJI: Record<EmotionalState, string> = {
   curious: '🤔',
   eager: '🙋',
   confused: '😕',
+  curious: '🤔',
   distracted: '😵',
   anxious: '😰',
   bored: '😴',
@@ -22,6 +22,7 @@ const EMOTION_EMOJI: Record<EmotionalState, string> = {
 const EMOTION_BORDER: Record<EmotionalState, string> = {
   curious: 'border-blue-400',
   confused: 'border-yellow-400',
+  curious: 'border-cyan-400',
   bored: 'border-gray-500',
   engaged: 'border-green-400',
   frustrated: 'border-red-400',
@@ -43,15 +44,7 @@ function normalize(value: number): number {
   return value <= 1 ? Math.round(value * 100) : Math.round(value)
 }
 
-export function StudentAvatar({ student, messageKey }: Props) {
-  const [showBubble, setShowBubble] = useState(false)
-
-  useEffect(() => {
-    if (!messageKey) return
-    setShowBubble(true)
-    const timer = setTimeout(() => setShowBubble(false), 5000)
-    return () => clearTimeout(timer)
-  }, [messageKey])
+export function StudentAvatar({ student, showBubble = false }: Props) {
 
   const borderColor = EMOTION_BORDER[student.emotional_state] ?? 'border-gray-500'
   const avatarBg = AVATAR_COLORS[student.id] ?? 'bg-gray-600'
@@ -90,7 +83,6 @@ export function StudentAvatar({ student, messageKey }: Props) {
         <EngagementBar label="Engagement" value={engagement} emotion={student.emotional_state} />
         <EngagementBar label="Comprehension" value={comprehension} emotion={student.emotional_state} />
       </div>
-
 
     </motion.div>
   )
