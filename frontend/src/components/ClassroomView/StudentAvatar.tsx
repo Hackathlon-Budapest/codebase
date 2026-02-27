@@ -7,18 +7,6 @@ interface Props {
   showBubble?: boolean
 }
 
-const EMOTION_BORDER: Record<EmotionalState, string> = {
-  curious: 'border-blue-400',
-  confused: 'border-yellow-400',
-  bored: 'border-gray-500',
-  engaged: 'border-green-400',
-  frustrated: 'border-red-400',
-  eager: 'border-purple-400',
-  anxious: 'border-orange-400',
-  distracted: 'border-gray-400',
-}
-
-
 const AVATAR_IMAGE_MAP: Record<string, Partial<Record<EmotionalState, string>>> = {
   maya: {
     eager: 'maya_engaged', engaged: 'maya_engaged', curious: 'maya_engaged',
@@ -59,7 +47,6 @@ function normalize(value: number): number {
 
 export function StudentAvatar({ student, showBubble = false }: Props) {
 
-  // const borderColor = EMOTION_BORDER[student.emotional_state] ?? 'border-gray-500'
   const avatarSrc = getAvatarSrc(student.id, student.emotional_state)
   const engagement = normalize(student.engagement)
   const comprehension = normalize(student.comprehension)
