@@ -15,6 +15,7 @@ from agents.orchestrator import decide_responders, update_student_states, genera
 from agents.student_agent import generate_response
 from services.azure_speech import text_to_speech, speech_to_text
 from agents.feedback_agent import generate_feedback
+from chaos_events import get_random_chaos_event, get_chaos_event_by_id
 from agents.autopsy_agent import generate_autopsy
 
 load_dotenv()
@@ -102,6 +103,39 @@ async def end_session(session_id: str):
         "feedback": feedback,
         "autopsy": autopsy,
     }
+
+
+@app.post("/session/{session_id}/chaos")
+async def inject_chaos(session_id: str, event_id: str | None = None):
+    session = sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if not session.active:
+        raise HTTPException(status_code=400, detail="Session is not active")
+    if event_id:
+        event = get_chaos_event_by_id(event_id)
+        if not event:
+            raise HTTPException(status_code=404, detail=f"Chaos event not found")
+    else:
+        event = get_random_chaos_event()
+    session.turn_count += 1
+    session.timeline.append({"turn": session.turn_count, "speaker": "teacher", "text": f"[CHAOS] {event['description']}"})
+    responders = await decide_responders(event["teacher_prompt"], session)
+    lesson_context = {"subject": session.config.subject, "topic": session.config.topic, "grade_level": session.config.grade_level}
+    responses = []
+    for responder in responders:
+        sid = responder["student_id"]
+        student = session.students.get(sid)
+        if not student:
+            continue
+        student_dict = {"name": student.name, "comprehension": round(student.comprehension * 100), "engagement": round(student.engagement * 100), "emotional_state": student.emotional_state.value, "response_history": []}
+        try:
+            resp = await asyncio.wait_for(generate_response(student_dict, event["teacher_prompt"], list(session.timeline), lesson_context), timeout=10.0)
+        except asyncio.TimeoutError:
+            continue
+        responses.append({"student_id": sid, "student_name": student.name, "voice_id": student.voice_id, "text": resp.text, "emotional_state": resp.emotional_state, "comprehension_delta": resp.comprehension_delta, "engagement_delta": resp.engagement_delta, "audio_base64": None})
+    update_student_states(session, responses)
+    return {"event": event, "responders": [{"student_id": r["student_id"], "student_name": r["student_name"], "text": r["text"], "emotional_state": r["emotional_state"]} for r in responses], "turn": session.turn_count}
 
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):

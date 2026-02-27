@@ -4,6 +4,7 @@ import { SessionSetup } from './components/TeacherControls/SessionSetup'
 import { ClassroomLayout } from './components/ClassroomView/ClassroomLayout'
 import { WhisperCoach } from './components/ClassroomView/WhisperCoach'
 import { MicButton } from './components/TeacherControls/MicButton'
+import { ChaosButton } from './components/ClassroomView/ChaosButton'
 import { SessionReport } from './components/Dashboard/SessionReport'
 import { useWebSocket } from './hooks/useWebSocket'
 
@@ -34,6 +35,7 @@ function ClassroomView() {
             <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
             <span className="text-gray-400">{isConnected ? 'Connected' : 'Connecting…'}</span>
           </div>
+          <ChaosButton />
           <button
             onClick={handleEndSession}
             className="text-xs px-3 py-1.5 rounded-lg bg-red-900 hover:bg-red-700 text-red-200 transition-colors"
