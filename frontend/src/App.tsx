@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useSessionStore } from './store/sessionStore'
 import { SessionSetup } from './components/TeacherControls/SessionSetup'
 import { ClassroomLayout } from './components/ClassroomView/ClassroomLayout'
+import { WhisperCoach } from './components/ClassroomView/WhisperCoach'
 import { MicButton } from './components/TeacherControls/MicButton'
 import { SessionReport } from './components/Dashboard/SessionReport'
 import { useWebSocket } from './hooks/useWebSocket'
@@ -67,6 +68,9 @@ function ClassroomView() {
 
           {/* Quick stats */}
           <QuickStats />
+
+          {/* Whisper Coach */}
+          <WhisperCoach />
         </aside>
       </main>
     </motion.div>
@@ -76,8 +80,8 @@ function ClassroomView() {
 function QuickStats() {
   const students = useSessionStore((s) => s.students)
   const studentList = Object.values(students)
-  const avgEng = Math.round(studentList.reduce((a, s) => a + s.engagement, 0) / studentList.length)
-  const avgComp = Math.round(studentList.reduce((a, s) => a + s.comprehension, 0) / studentList.length)
+  const avgEng = Math.round((studentList.reduce((a, s) => a + s.engagement, 0) / studentList.length) * (studentList[0]?.engagement <= 1 ? 100 : 1))
+  const avgComp = Math.round((studentList.reduce((a, s) => a + s.comprehension, 0) / studentList.length) * (studentList[0]?.comprehension <= 1 ? 100 : 1))
 
   return (
     <div className="border-t border-classroom-border pt-4 space-y-2 text-sm">

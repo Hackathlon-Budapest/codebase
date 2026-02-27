@@ -8,26 +8,29 @@ const GRADE_OPTIONS = [
   'Grade 10', 'Grade 11', 'Grade 12',
 ]
 
-const TOPIC_SUGGESTIONS = [
-  'The Water Cycle',
-  'Fractions and Decimals',
-  'The American Revolution',
-  'Photosynthesis',
-  'The Solar System',
-  'World War II',
-  'Supply and Demand',
-  'DNA and Genetics',
-]
+const TOPICS_BY_SUBJECT: Record<string, string[]> = {
+  Science:     ['The Water Cycle', 'The Solar System', 'States of Matter', 'Ecosystems', 'The Scientific Method'],
+  Mathematics: ['Fractions and Decimals', 'Algebra Basics', 'Geometry and Shapes', 'Probability', 'Linear Equations'],
+  History:     ['The American Revolution', 'World War II', 'Ancient Rome', 'The Renaissance', 'The Cold War'],
+  Biology:     ['DNA and Genetics', 'Photosynthesis', 'Cell Division', 'Evolution', 'The Human Body'],
+  Physics:     ["Newton's Laws of Motion", 'Electricity and Circuits', 'Waves and Sound', 'Gravity', 'Energy and Work'],
+  Economics:   ['Supply and Demand', 'Inflation and Deflation', 'Markets and Competition', 'GDP and Growth', 'Money and Banking'],
+  English:     ['Shakespeare and Drama', 'Essay Writing', 'Poetry Analysis', 'Grammar and Punctuation', 'Novel Study'],
+}
 
-const SUBJECT_SUGGESTIONS = [
-  'Science', 'Mathematics', 'History',
-  'Biology', 'Physics', 'Economics', 'English',
-]
+const SUBJECT_SUGGESTIONS = Object.keys(TOPICS_BY_SUBJECT)
 
 export function SessionSetup() {
   const { topic, grade_level, subject, setTopic, setGradeLevel, setSubject, startSession } = useSessionStore()
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  const topicSuggestions = TOPICS_BY_SUBJECT[subject] ?? []
+
+  const handleSubjectSelect = (s: string) => {
+    setSubject(s)
+    setTopic('')
+  }
 
   const handleStart = async () => {
     if (!topic.trim() || !grade_level) {
@@ -91,8 +94,12 @@ export function SessionSetup() {
             {SUBJECT_SUGGESTIONS.map((s) => (
               <button
                 key={s}
-                onClick={() => setSubject(s)}
-                className="text-xs px-2 py-1 rounded-full bg-classroom-border text-gray-400 hover:text-white hover:bg-classroom-accent transition-colors"
+                onClick={() => handleSubjectSelect(s)}
+                className={`text-xs px-2 py-1 rounded-full transition-colors ${
+                  subject === s
+                    ? 'bg-classroom-accent text-white'
+                    : 'bg-classroom-border text-gray-400 hover:text-white hover:bg-classroom-accent'
+                }`}
               >
                 {s}
               </button>
@@ -112,17 +119,23 @@ export function SessionSetup() {
             placeholder="e.g. The Water Cycle"
             className="w-full bg-classroom-bg border border-classroom-border rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-classroom-accent transition-colors"
           />
-          <div className="flex flex-wrap gap-2 mt-2">
-            {TOPIC_SUGGESTIONS.map((s) => (
-              <button
-                key={s}
-                onClick={() => setTopic(s)}
-                className="text-xs px-2 py-1 rounded-full bg-classroom-border text-gray-400 hover:text-white hover:bg-classroom-accent transition-colors"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+          {topicSuggestions.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {topicSuggestions.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setTopic(s)}
+                  className={`text-xs px-2 py-1 rounded-full transition-colors ${
+                    topic === s
+                      ? 'bg-classroom-accent text-white'
+                      : 'bg-classroom-border text-gray-400 hover:text-white hover:bg-classroom-accent'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Grade level */}

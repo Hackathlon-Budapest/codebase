@@ -84,21 +84,23 @@ async def text_to_speech(text: str, voice_id: str) -> str | None:
     if not _AVAILABLE:
         return None  # Frontend skips audio playback when audio_base64 is null
 
-    speech_config = speechsdk.SpeechConfig(subscription=_KEY, region=_REGION)
-    speech_config.speech_synthesis_voice_name = voice_id
-    speech_config.set_speech_synthesis_output_format(
-        speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
-    )
+    loop = asyncio.get_running_loop()
 
-    synthesiser = speechsdk.SpeechSynthesizer(
-        speech_config=speech_config, audio_config=None
-    )
-    result = synthesiser.speak_text_async(text).get()
+    def _synthesize() -> str | None:
+        speech_config = speechsdk.SpeechConfig(subscription=_KEY, region=_REGION)
+        speech_config.speech_synthesis_voice_name = voice_id
+        speech_config.set_speech_synthesis_output_format(
+            speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
+        )
+        synthesiser = speechsdk.SpeechSynthesizer(
+            speech_config=speech_config, audio_config=None
+        )
+        result = synthesiser.speak_text_async(text).get()
+        if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+            return base64.b64encode(result.audio_data).decode("utf-8")
+        return None
 
-    if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-        return base64.b64encode(result.audio_data).decode("utf-8")
-
-    return None
+    return await loop.run_in_executor(None, _synthesize)
 
 
 async def speech_to_text(audio_data: bytes) -> str:

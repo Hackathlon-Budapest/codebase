@@ -11,7 +11,7 @@ from models import (
     StudentResponse, StateUpdate,
     SessionEndMessage, ErrorMessage, EmotionalState
 )
-from agents.orchestrator import decide_responders, update_student_states
+from agents.orchestrator import decide_responders, update_student_states, generate_coaching_hint
 from agents.student_agent import generate_response
 from services.azure_speech import text_to_speech, speech_to_text
 from agents.feedback_agent import generate_feedback
@@ -130,13 +130,21 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     "grade_level": session.config.grade_level,
                 }
 
-                # Sequential processing — each student sees prior same-turn responses (enables debates)
-                responses = []
+                # Pipeline: student N's TTS runs while student N+1's LLM runs.
+                # Debate preserved: live_history_texts captures each student's text
+                # immediately after their LLM completes, before TTS finishes.
+                responses: list[dict] = []
+                live_history_texts: list[dict] = []
+                pending_tts_task: asyncio.Task | None = None
+                pending_result: dict | None = None
+                pending_msg: StudentResponse | None = None
+
                 for responder in responders:
                     sid = responder["student_id"]
                     student = session.students.get(sid)
                     if not student:
                         continue
+
                     student_dict = {
                         "name": student.name,
                         "comprehension": round(student.comprehension * 100),
@@ -144,24 +152,47 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                         "emotional_state": student.emotional_state.value,
                         "response_history": [],
                     }
-                    # Include this turn's already-sent responses so later students can debate
+                    # Build debate context from LLM-completed responses this turn
                     live_history = list(session.timeline) + [
-                        {"speaker": r["student_name"], "text": r["text"]}
-                        for r in responses if r["text"].strip()
+                        {"speaker": e["speaker"], "text": e["text"]}
+                        for e in live_history_texts if e["text"].strip()
                     ]
+
+                    # Run current student's LLM — overlaps with previous student's TTS
                     try:
                         resp = await asyncio.wait_for(
                             generate_response(student_dict, teacher_text, live_history, lesson_context),
                             timeout=10.0
                         )
-                        audio = await asyncio.wait_for(
-                            text_to_speech(resp.text, student.voice_id),
-                            timeout=8.0
-                        )
                     except asyncio.TimeoutError:
                         continue
 
-                    result = {
+                    # Record text immediately for next student's debate context
+                    live_history_texts.append({"speaker": student.name, "text": resp.text})
+
+                    # Flush previous student's TTS (may already be done)
+                    if pending_tts_task is not None:
+                        try:
+                            audio = await pending_tts_task
+                        except (asyncio.TimeoutError, Exception):
+                            audio = None
+                        pending_result["audio_base64"] = audio
+                        responses.append(pending_result)
+                        if pending_msg and pending_result["text"].strip():
+                            pending_msg.audio_base64 = audio
+                            await websocket.send_text(pending_msg.model_dump_json())
+                        pending_tts_task = None
+                        pending_result = None
+                        pending_msg = None
+
+                    # Start current student's TTS as a background task
+                    pending_tts_task = asyncio.create_task(
+                        asyncio.wait_for(
+                            text_to_speech(resp.text, student.voice_id),
+                            timeout=8.0
+                        )
+                    )
+                    pending_result = {
                         "student_id": sid,
                         "student_name": student.name,
                         "voice_id": student.voice_id,
@@ -169,22 +200,29 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                         "emotional_state": resp.emotional_state,
                         "comprehension_delta": resp.comprehension_delta,
                         "engagement_delta": resp.engagement_delta,
-                        "audio_base64": audio,
+                        "audio_base64": None,
                     }
-                    responses.append(result)
+                    pending_msg = StudentResponse(
+                        student_id=sid,
+                        student_name=student.name,
+                        text=resp.text,
+                        emotional_state=EmotionalState(resp.emotional_state),
+                        engagement=student.engagement,
+                        comprehension=student.comprehension,
+                        audio_base64=None,
+                    )
 
-                    # 3. Send each response immediately as generated (skip silent turns)
-                    if resp.text.strip():
-                        msg = StudentResponse(
-                            student_id=sid,
-                            student_name=student.name,
-                            text=resp.text,
-                            emotional_state=EmotionalState(resp.emotional_state),
-                            engagement=student.engagement,
-                            comprehension=student.comprehension,
-                            audio_base64=audio,
-                        )
-                        await websocket.send_text(msg.model_dump_json())
+                # Flush the last student's TTS
+                if pending_tts_task is not None:
+                    try:
+                        audio = await pending_tts_task
+                    except (asyncio.TimeoutError, Exception):
+                        audio = None
+                    pending_result["audio_base64"] = audio
+                    responses.append(pending_result)
+                    if pending_msg and pending_result["text"].strip():
+                        pending_msg.audio_base64 = audio
+                        await websocket.send_text(pending_msg.model_dump_json())
 
                 # 4a. Log student responses into timeline (needed for autopsy)
                 for r in responses:
@@ -209,7 +247,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     }
                     for sid, s in session.students.items()
                 }
-                await websocket.send_text(StateUpdate(turn=session.turn_count, students=state_snapshot).model_dump_json())
+                coaching_hint = generate_coaching_hint(session)
+                await websocket.send_text(
+                    StateUpdate(
+                        turn=session.turn_count,
+                        students=state_snapshot,
+                        coaching_hint=coaching_hint,
+                    ).model_dump_json()
+                )
             elif data.get("type") == "session_end":
                 await websocket.send_text(SessionEndMessage(session_id=session_id).model_dump_json())
                 break

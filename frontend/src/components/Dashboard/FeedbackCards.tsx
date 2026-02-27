@@ -32,13 +32,13 @@ function useScores(): FeedbackDimension[] {
     {
       label: 'Engagement',
       description: 'Average student engagement across the session',
-      score: Math.round(avgEngagement),
+      score: Math.round(avgEngagement <= 1 ? avgEngagement * 100 : avgEngagement),
       color: '#4f8ef7',
     },
     {
       label: 'Comprehension',
       description: 'How well students understood the material',
-      score: Math.round(avgComprehension),
+      score: Math.round(avgComprehension <= 1 ? avgComprehension * 100 : avgComprehension),
       color: '#22c55e',
     },
     {
