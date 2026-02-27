@@ -176,7 +176,6 @@ const INITIAL_STATE = {
   isConnected: false,
   isProcessing: false,
   errorMessage: null,
-  coachingHint: null,
 }
 
 export const useSessionStore = create<SessionStore>((set) => ({
