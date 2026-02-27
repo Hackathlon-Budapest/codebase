@@ -148,8 +148,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     continue
                 responses = [r for r in results if r]
 
-                # 3. Push each student response to the frontend
+                # 3. Push each student response to the frontend (skip silent turns)
                 for resp in responses:
+                    if not resp["text"].strip():
+                        continue  # LLM chose to stay silent — don't emit an empty log entry
                     student = session.students[resp["student_id"]]
                     msg = StudentResponse(
                         student_id=resp["student_id"],

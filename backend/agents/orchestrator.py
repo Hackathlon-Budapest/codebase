@@ -120,6 +120,17 @@ async def decide_responders(teacher_input: str, session: SessionState) -> list[d
         if isinstance(r, dict) and r.get("student_id") in valid_ids
     ][:2]
 
+    # If teacher asked a direct question and nobody was selected, pick the most
+    # engaged available student as a guaranteed responder
+    if not responders and "?" in teacher_input:
+        available = [
+            (sid, s) for sid, s in session.students.items()
+            if s.consecutive_turns_speaking < 2
+        ]
+        if available:
+            best_sid = max(available, key=lambda x: x[1].engagement)[0]
+            responders = [{"student_id": best_sid, "reason": "direct question fallback"}]
+
     return responders
 
 

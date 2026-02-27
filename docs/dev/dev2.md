@@ -116,3 +116,24 @@ GPT was previously told to return only 5 states (`curious` was one of them) so i
 **Built:**
 - `agents/orchestrator.py` — replaced `chat_completion` with `chat_completion_json`; simplified result parsing to `result.get("responders", [])`. Root cause: `chat_completion` returns a `str`, but the orchestrator was checking `isinstance(result, dict)` which was always `False` → `raw_responders = []` → no student ever responded.
 - `components/Dashboard/SessionReport.tsx` — fixed feedback key from `data.feedback?.coaching_text` to `data.feedback?.feedback`. Root cause: `generate_feedback` returns `{"summary": ..., "feedback": "text"}` but the frontend was looking for `.coaching_text` (which doesn't exist), fell back to the entire dict, then `<pre>` crashed trying to render an object instead of a string.
+
+---
+
+## Push 8 — Fix empty student log entries
+`2026-02-27`
+
+**Built:**
+- `main.py` — skip sending `student_response` WS message when `resp["text"]` is empty/whitespace. Root cause: student_agent prompt explicitly allows `text: ""` (student chooses to stay silent), but the backend was still broadcasting those empty responses. Frontend would add a log entry with the student's name but blank text. State updates (engagement/comprehension deltas) still apply for silent turns.
+
+---
+
+## Push 9 — Fix stuck Processing on silent turns + no-response indicator
+`2026-02-27`
+
+**Built:**
+- `hooks/useWebSocket.ts` — added `setProcessing(false)` to `state_update` handler. Root cause: Push 8 stopped sending `student_response` for silent turns, but `setProcessing(false)` was only called on `student_response` — so if all responders were silent the UI stayed locked forever. `state_update` is always sent at end of every turn, making it the correct canonical "turn complete" signal.
+- `hooks/useWebSocket.ts` — added `hadResponseThisTurnRef` boolean ref. Reset to `false` on teacher send; set to `true` on any `student_response`. On `state_update`, if still `false`, inserts `"— No one responded."` into the conversation log so the teacher knows the turn was processed (rather than retrying blindly).
+- `agents/orchestrator.py` — added direct-question fallback: if GPT returns 0 responders and the teacher's input contains `?`, pick the most engaged student with `consecutive_turns_speaking < 2` as a guaranteed responder. Prevents silent turns on explicit questions.
+
+**Why it matters:**
+Before this fix, questions that got 0 GPT-selected responders would leave the teacher stuck on "Processing…" permanently (or after Push 8, unstuck but with no feedback). Teachers were double-sending questions because they couldn't tell if the turn had registered. Now: questions always get at least one response, and non-question silent turns show a clear indicator.
