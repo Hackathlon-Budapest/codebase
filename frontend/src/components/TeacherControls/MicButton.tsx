@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAudioRecorder } from '../../hooks/useAudioRecorder'
+import { useLiveTranscript } from '../../hooks/useLiveTranscript'
 import { useSessionStore } from '../../store/sessionStore'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
@@ -11,14 +12,30 @@ interface Props {
 
 export function MicButton({ sendTeacherInput }: Props) {
   const { isRecording, startRecording, stopRecording, error: micError } = useAudioRecorder()
+  const { interimText, startListening, stopListening } = useLiveTranscript()
   const isProcessing = useSessionStore((s) => s.isProcessing)
   const isConnected = useSessionStore((s) => s.isConnected)
+
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [sttError, setSttError] = useState<string | null>(null)
+  const [confirmedText, setConfirmedText] = useState<string | null>(null)
   const [textInput, setTextInput] = useState('')
+  const confirmedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Clear confirmed text after 5 seconds
+  useEffect(() => {
+    if (confirmedText) {
+      if (confirmedTimerRef.current) clearTimeout(confirmedTimerRef.current)
+      confirmedTimerRef.current = setTimeout(() => setConfirmedText(null), 5000)
+    }
+    return () => {
+      if (confirmedTimerRef.current) clearTimeout(confirmedTimerRef.current)
+    }
+  }, [confirmedText])
 
   const handleMicClick = async () => {
     if (isRecording) {
+      stopListening()
       const audio_base64 = await stopRecording()
       if (!audio_base64) return
 
@@ -32,6 +49,7 @@ export function MicButton({ sendTeacherInput }: Props) {
         })
         const data = await res.json()
         if (data.text?.trim()) {
+          setConfirmedText(data.text.trim())
           sendTeacherInput(data.text.trim())
         } else {
           setSttError('Could not transcribe — use text input below')
@@ -43,6 +61,8 @@ export function MicButton({ sendTeacherInput }: Props) {
       }
     } else {
       setSttError(null)
+      setConfirmedText(null)
+      startListening()
       await startRecording()
     }
   }
@@ -71,6 +91,8 @@ export function MicButton({ sendTeacherInput }: Props) {
     ? 'Connecting…'
     : 'Tap to speak'
 
+  const showTranscriptBox = isRecording || isTranscribing || !!confirmedText
+
   return (
     <div className="flex flex-col items-center gap-3 w-full">
       {/* Mic button */}
@@ -95,6 +117,68 @@ export function MicButton({ sendTeacherInput }: Props) {
       </motion.button>
 
       <span className="text-xs text-gray-400">{label}</span>
+
+      {/* Live transcript panel */}
+      <AnimatePresence>
+        {showTranscriptBox && (
+          <motion.div
+            key="transcript"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="w-full overflow-hidden"
+          >
+            <div className="rounded-lg border border-classroom-border bg-classroom-bg p-3 text-sm space-y-1">
+              {isRecording && (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse flex-shrink-0" />
+                    <span className="text-xs text-gray-400">Listening…</span>
+                  </div>
+                  <p className="text-gray-200 leading-relaxed min-h-[1.25rem]">
+                    {interimText ? (
+                      <>
+                        {interimText}
+                        <span className="inline-block w-0.5 h-3.5 bg-gray-300 ml-0.5 align-middle animate-pulse" />
+                      </>
+                    ) : (
+                      <span className="text-gray-600 italic">
+                        Waiting for speech
+                        <span className="inline-block w-0.5 h-3.5 bg-gray-600 ml-0.5 align-middle animate-pulse" />
+                      </span>
+                    )}
+                  </p>
+                </>
+              )}
+
+              {isTranscribing && (
+                <div className="flex items-center gap-2 text-gray-400">
+                  <motion.span
+                    animate={{ opacity: [1, 0.3, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                    className="text-xs"
+                  >
+                    ⏳
+                  </motion.span>
+                  <span className="text-xs">Transcribing…</span>
+                </div>
+              )}
+
+              {confirmedText && !isRecording && !isTranscribing && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <span className="text-xs text-green-400 font-medium">✓ Sent</span>
+                  <p className="text-gray-200 leading-relaxed mt-0.5">{confirmedText}</p>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {(micError || sttError) && (
         <p className="text-xs text-red-400">{micError ?? sttError}</p>
