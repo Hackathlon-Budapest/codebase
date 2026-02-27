@@ -15,7 +15,6 @@ Python + FastAPI
 - WebSocket server (real-time bidirectional)
 - Azure OpenAI SDK (GPT-4o)
 - Azure Speech SDK (STT + TTS)
-- Azure AI Language SDK (sentiment)
 - In-memory session state (no DB needed for demo)
 
 ## Azure Services
@@ -25,7 +24,6 @@ Python + FastAPI
 | Azure OpenAI (GPT-4o) | Orchestrator + all student agents         |
 | Azure Speech-to-Text  | Teacher voice input                       |
 | Azure Text-to-Speech  | Student voices (unique voice per persona) |
-| Azure AI Language     | Sentiment/emotion tagging on responses    |
 
 ## Decision Summary
 

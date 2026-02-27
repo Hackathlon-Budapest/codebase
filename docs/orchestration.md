@@ -30,9 +30,6 @@ Selected student agent(s) generate response
 Responses → TTS (each student has unique voice)
      │
      ▼
-Sentiment analysis on student response
-     │
-     ▼
 State update → WebSocket push to frontend
      │
      ▼
