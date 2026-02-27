@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAudioRecorder } from '../../hooks/useAudioRecorder'
-import { useWebSocket } from '../../hooks/useWebSocket'
 import { useSessionStore } from '../../store/sessionStore'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
-export function MicButton() {
+interface Props {
+  sendTeacherInput: (text: string) => void
+}
+
+export function MicButton({ sendTeacherInput }: Props) {
   const { isRecording, startRecording, stopRecording, error: micError } = useAudioRecorder()
-  const { sendTeacherInput } = useWebSocket()
   const isProcessing = useSessionStore((s) => s.isProcessing)
   const isConnected = useSessionStore((s) => s.isConnected)
   const [isTranscribing, setIsTranscribing] = useState(false)

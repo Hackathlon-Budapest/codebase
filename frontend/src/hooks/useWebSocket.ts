@@ -35,7 +35,6 @@ type BackendMessage = StudentResponseMsg | StateUpdateMsg | SessionEndMsg | Erro
 
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null)
-  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Sequential audio queue — prevents overlapping student voices
   const audioQueueRef = useRef<string[]>([])
@@ -117,41 +116,46 @@ export function useWebSocket() {
     [setProcessing, updateStudentState, addConversationEntry, applyStateUpdate, endSession, setError]
   )
 
-  const connect = useCallback(() => {
-    if (!session_id) return
-    const url = `${WS_URL}/${session_id}`
-    const ws = new WebSocket(url)
-
-    ws.onopen = () => {
-      setConnected(true)
-      setError(null)
-    }
-
-    ws.onclose = () => {
-      setConnected(false)
-      // Attempt reconnect after 2s
-      reconnectRef.current = setTimeout(connect, 2000)
-    }
-
-    ws.onerror = () => {
-      setError('WebSocket connection error')
-    }
-
-    ws.onmessage = handleMessage
-
-    wsRef.current = ws
-  }, [session_id, handleMessage, setConnected, setError])
-
   useEffect(() => {
-    if (session_id) {
-      connect()
+    if (!session_id) return
+
+    let cancelled = false
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+
+    function open() {
+      if (cancelled) return
+      const ws = new WebSocket(`${WS_URL}/${session_id}`)
+
+      ws.onopen = () => {
+        if (cancelled) { ws.close(); return }
+        setConnected(true)
+        setError(null)
+      }
+
+      ws.onclose = () => {
+        if (cancelled) return
+        setConnected(false)
+        reconnectTimer = setTimeout(open, 2000)
+      }
+
+      ws.onerror = () => {
+        if (cancelled) return
+        setError('WebSocket connection error')
+      }
+
+      ws.onmessage = handleMessage
+      wsRef.current = ws
     }
+
+    open()
+
     return () => {
-      if (reconnectRef.current) clearTimeout(reconnectRef.current)
+      cancelled = true
+      if (reconnectTimer) clearTimeout(reconnectTimer)
       wsRef.current?.close()
       wsRef.current = null
     }
-  }, [session_id, connect])
+  }, [session_id, handleMessage, setConnected, setError])
 
   const sendTeacherInput = useCallback(
     (text: string) => {

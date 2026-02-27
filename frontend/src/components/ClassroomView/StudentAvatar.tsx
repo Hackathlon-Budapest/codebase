@@ -21,7 +21,6 @@ const EMOTION_EMOJI: Record<EmotionalState, string> = {
 
 const EMOTION_BORDER: Record<EmotionalState, string> = {
   confused: 'border-yellow-400',
-  anxious: 'border-purple-400',
   bored: 'border-gray-500',
   engaged: 'border-green-400',
   frustrated: 'border-red-400',
@@ -43,7 +42,7 @@ function normalize(value: number): number {
   return value <= 1 ? Math.round(value * 100) : Math.round(value)
 }
 
-export function StudentAvatar({ student, lastMessage }: Props) {
+export function StudentAvatar({ student, lastMessage, messageKey }: Props) {
   const [showBubble, setShowBubble] = useState(false)
 
   useEffect(() => {

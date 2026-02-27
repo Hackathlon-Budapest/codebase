@@ -7,11 +7,8 @@ import { SessionReport } from './components/Dashboard/SessionReport'
 import { useWebSocket } from './hooks/useWebSocket'
 
 function ClassroomView() {
-  // Initialise WebSocket for the active session
-  useWebSocket()
-
   const { topic, grade_level, isConnected, errorMessage, endSession, setError } = useSessionStore()
-  const { sendSessionEnd } = useWebSocket()
+  const { sendSessionEnd, sendTeacherInput } = useWebSocket()
 
   const handleEndSession = () => {
     sendSessionEnd()
@@ -65,7 +62,7 @@ function ClassroomView() {
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Teacher Controls</h2>
 
           <div className="flex flex-col items-center gap-4 flex-1">
-            <MicButton />
+            <MicButton sendTeacherInput={sendTeacherInput} />
           </div>
 
           {/* Quick stats */}
