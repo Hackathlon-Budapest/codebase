@@ -68,3 +68,17 @@
 - Model files cached in `~/.cache/huggingface/hub/` after first download
 - Run backend once before demo to warm up the model: first `/stt` call triggers download
 - Azure STT still takes priority if `AZURE_SPEECH_KEY` is set, but WebM format will likely fail silently and fall through to whisper anyway
+
+---
+
+## Push 4 — EmotionalState alignment (flagged by Dev 3)
+`2026-02-27`
+
+**Built:**
+- `personas/personas.py:10` — updated `EmotionalState` Literal to match `backend/models.py` enum: removed `curious`, added `eager`, `anxious`, `distracted`
+- `personas/personas.py:462` — changed hardcoded initial `"curious"` state to `"engaged"` (valid default)
+- `agents/student_agent.py:87` — updated LLM prompt to instruct GPT to return `eager|confused|bored|frustrated|engaged|anxious|distracted`
+- `agents/student_agent.py:152` — updated `valid_emotions` validation set to the same 7 states
+
+**Why it matters:**
+GPT was previously told to return only 5 states (`curious` was one of them) so it never returned `eager`, `anxious`, or `distracted`. Dev 3 extended the frontend `EmotionalState` type to all 7 values but they could never appear in a live session — student emotion badges were effectively stuck. Now GPT's output aligns with both `models.py` and the frontend type.
