@@ -116,3 +116,41 @@ GPT was previously told to return only 5 states (`curious` was one of them) so i
 **Built:**
 - `agents/orchestrator.py` — replaced `chat_completion` with `chat_completion_json`; simplified result parsing to `result.get("responders", [])`. Root cause: `chat_completion` returns a `str`, but the orchestrator was checking `isinstance(result, dict)` which was always `False` → `raw_responders = []` → no student ever responded.
 - `components/Dashboard/SessionReport.tsx` — fixed feedback key from `data.feedback?.coaching_text` to `data.feedback?.feedback`. Root cause: `generate_feedback` returns `{"summary": ..., "feedback": "text"}` but the frontend was looking for `.coaching_text` (which doesn't exist), fell back to the entire dict, then `<pre>` crashed trying to render an object instead of a string.
+
+---
+
+## Push 8 — Fix empty student log entries
+`2026-02-27`
+
+**Built:**
+- `main.py` — skip sending `student_response` WS message when `resp["text"]` is empty/whitespace. Root cause: student_agent prompt explicitly allows `text: ""` (student chooses to stay silent), but the backend was still broadcasting those empty responses. Frontend would add a log entry with the student's name but blank text. State updates (engagement/comprehension deltas) still apply for silent turns.
+
+---
+
+## Push 9 — Fix stuck Processing on silent turns + no-response indicator
+`2026-02-27`
+
+**Built:**
+- `hooks/useWebSocket.ts` — added `setProcessing(false)` to `state_update` handler. Root cause: Push 8 stopped sending `student_response` for silent turns, but `setProcessing(false)` was only called on `student_response` — so if all responders were silent the UI stayed locked forever. `state_update` is always sent at end of every turn, making it the correct canonical "turn complete" signal.
+- `hooks/useWebSocket.ts` — added `hadResponseThisTurnRef` boolean ref. Reset to `false` on teacher send; set to `true` on any `student_response`. On `state_update`, if still `false`, inserts `"— No one responded."` into the conversation log so the teacher knows the turn was processed (rather than retrying blindly).
+- `agents/orchestrator.py` — added direct-question fallback: if GPT returns 0 responders and the teacher's input contains `?`, pick the most engaged student with `consecutive_turns_speaking < 2` as a guaranteed responder. Prevents silent turns on explicit questions.
+
+**Why it matters:**
+Before this fix, questions that got 0 GPT-selected responders would leave the teacher stuck on "Processing…" permanently (or after Push 8, unstuck but with no feedback). Teachers were double-sending questions because they couldn't tell if the turn had registered. Now: questions always get at least one response, and non-question silent turns show a clear indicator.
+
+---
+
+## Push 10 — Group addressing + student debates
+`2026-02-27`
+
+**Built:**
+- `agents/orchestrator.py` — added `_is_group_address()` helper; detects keywords: `"everyone"`, `"everybody"`, `"all of you"`, `"each of you"`, `"go around"`, `"1 by 1"`, `"one by one"`, `"one at a time"`, `"the class"`, `"whole class"`, `"around the room"`. When triggered, all available students (consecutive_turns_speaking < 3) are returned as responders instead of capping at 2. Updated system prompt to reflect 0–5 responder range.
+- `main.py` — replaced `asyncio.gather` (parallel) with a sequential loop over responders:
+  - Each student's history (`live_history`) includes the current session timeline **plus** any same-turn responses already generated, so later students can see and react to earlier ones
+  - Responses stream to the frontend as they're generated — no waiting for all to finish
+  - Individual `asyncio.wait_for` timeouts per student (10s LLM, 8s TTS) so one slow call doesn't block the rest
+  - WS send moved inside the loop (was a separate post-gather loop)
+- `agents/student_agent.py` — added one instruction line to `_build_context_message`: students are told they may build on, agree with, or push back on classmate responses visible in RECENT CONVERSATION
+
+**Why it matters:**
+Previously the orchestrator hard-capped at 2 responders and all LLM calls ran in parallel, so students never saw each other's same-turn responses. Group instructions like "I'd like everyone to share 1 by 1" would get 2 responses max and no debate. Now all 5 students respond to group prompts and each one sees what the previous students said, producing natural classroom dynamics.

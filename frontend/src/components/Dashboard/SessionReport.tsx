@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import ReactMarkdown from 'react-markdown'
 import { useSessionStore } from '../../store/sessionStore'
 import { FeedbackCards } from './FeedbackCards'
 import { EngagementTimeline } from './EngagementTimeline'
@@ -115,9 +116,15 @@ export function SessionReport() {
           <p className="text-red-400 text-sm">{feedbackError}</p>
         )}
         {feedbackText && (
-          <pre className="text-gray-300 text-sm whitespace-pre-wrap font-sans leading-relaxed">
-            {feedbackText}
-          </pre>
+          <div className="prose prose-invert prose-sm max-w-none
+            prose-headings:text-white prose-headings:font-semibold
+            prose-h3:text-base prose-h3:mt-4 prose-h3:mb-2
+            prose-p:text-gray-300 prose-p:leading-relaxed prose-p:my-1
+            prose-strong:text-white prose-strong:font-semibold
+            prose-li:text-gray-300 prose-ul:my-1 prose-ol:my-1
+            prose-ol:list-decimal prose-ul:list-disc">
+            <ReactMarkdown>{feedbackText}</ReactMarkdown>
+          </div>
         )}
         {!isFeedbackLoading && !feedbackText && !feedbackError && (
           <p className="text-gray-500 text-sm">No feedback available.</p>

@@ -49,7 +49,8 @@ The classroom has 5 student personas with the following base response probabilit
 - marcus     (checked out)                 base_prob=0.70
 
 Rules:
-1. Select 0, 1, or 2 students to respond. Silence (0 responders) is realistic and valid.
+1. Select 0–5 students to respond. Silence (0 responders) is realistic and valid.
+   Normally select 0–2; select more when the teacher explicitly addresses the whole class.
 2. Use each student's current engagement, comprehension, and emotional_state to adjust
    their probability of responding beyond the base probability.
 3. Avoid selecting the same student 3 turns in a row (consecutive_turns_speaking >= 2).
@@ -66,6 +67,16 @@ Return ONLY valid JSON in this exact format:
 
 The responders array may be empty. Do not include any text outside the JSON object.
 """
+
+_GROUP_ADDRESS_KEYWORDS = (
+    "everyone", "everybody", "all of you", "each of you",
+    "go around", "1 by 1", "one by one", "one at a time",
+    "the class", "whole class", "around the room", "each student",
+)
+
+def _is_group_address(teacher_input: str) -> bool:
+    lower = teacher_input.lower()
+    return any(kw in lower for kw in _GROUP_ADDRESS_KEYWORDS)
 
 
 # ---------------------------------------------------------------------------
@@ -113,12 +124,34 @@ async def decide_responders(teacher_input: str, session: SessionState) -> list[d
         # Dev 2's service not yet available — use local heuristic fallback
         raw_responders = _fallback_responders(session)
 
-    # Validate and cap at 2 responders
+    # Validate responders
     valid_ids = set(session.students.keys())
-    responders = [
+    validated = [
         r for r in raw_responders
         if isinstance(r, dict) and r.get("student_id") in valid_ids
-    ][:2]
+    ]
+
+    # Group address — include all available students (no cap)
+    if _is_group_address(teacher_input):
+        gpt_ids = {r["student_id"] for r in validated}
+        remaining = [
+            {"student_id": sid, "reason": "group address"}
+            for sid, s in session.students.items()
+            if sid not in gpt_ids and s.consecutive_turns_speaking < 3
+        ]
+        responders = validated + remaining
+    else:
+        responders = validated[:2]
+        # If teacher asked a direct question and nobody was selected, pick the most
+        # engaged available student as a guaranteed responder
+        if not responders and "?" in teacher_input:
+            available = [
+                (sid, s) for sid, s in session.students.items()
+                if s.consecutive_turns_speaking < 2
+            ]
+            if available:
+                best_sid = max(available, key=lambda x: x[1].engagement)[0]
+                responders = [{"student_id": best_sid, "reason": "direct question fallback"}]
 
     return responders
 

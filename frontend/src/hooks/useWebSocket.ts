@@ -37,6 +37,9 @@ type BackendMessage = StudentResponseMsg | StateUpdateMsg | SessionEndMsg | Erro
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null)
 
+  // Tracks whether any student responded in the current turn
+  const hadResponseThisTurnRef = useRef(false)
+
   // Sequential audio queue — prevents overlapping student voices
   const audioQueueRef = useRef<string[]>([])
   const isPlayingRef = useRef(false)
@@ -80,6 +83,7 @@ export function useWebSocket() {
 
       switch (msg.type) {
         case 'student_response': {
+          hadResponseThisTurnRef.current = true
           setProcessing(false)
           updateStudentState(msg.student_id, {
             emotional_state: msg.emotional_state as never,
@@ -115,6 +119,16 @@ export function useWebSocket() {
           if (msg.coaching_hint !== undefined) {
             setCoachingHint(msg.coaching_hint ?? null)
           }
+          if (!hadResponseThisTurnRef.current) {
+            addConversationEntry({
+              timestamp: new Date().toISOString(),
+              speaker: '—',
+              text: 'No one responded.',
+            })
+          }
+          hadResponseThisTurnRef.current = false
+          setProcessing(false)
+          applyStateUpdate(msg.students)
           break
         }
         case 'session_end': {
@@ -179,6 +193,7 @@ export function useWebSocket() {
         setError('Not connected to backend')
         return
       }
+      hadResponseThisTurnRef.current = false
       setProcessing(true)
       setError(null)
       addConversationEntry({
