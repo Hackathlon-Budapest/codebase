@@ -53,13 +53,13 @@ export function StudentAvatar({ student, showBubble = false }: Props) {
 
   return (
     <motion.div
-      className="flex flex-col items-center gap-2 p-3 rounded-xl bg-classroom-surface border border-classroom-border w-36"
+      className="flex flex-col items-center gap-2 p-3 rounded-xl bg-classroom-surface border border-classroom-border w-40"
       animate={showBubble ? { scale: [1, 1.04, 1] } : {}}
       transition={{ duration: 0.3 }}
     >
       {/* Avatar */}
       <motion.div
-        className={`w-36 h-36 rounded-xl overflow-hidden flex items-center justify-center text-2xl font-bold $`}
+        className={`w-40 h-40 rounded-xl overflow-hidden flex items-center justify-center text-2xl font-bold $`}
         animate={showBubble ? {
           boxShadow: ['0 0 0px #ffffff00', '0 0 14px #ffffff99', '0 0 0px #ffffff00'],
           scale: [1, 1.07, 1],

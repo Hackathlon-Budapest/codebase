@@ -58,7 +58,7 @@ function ClassroomView() {
       )}
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col lg:flex-row gap-6 p-6">
+      <main className="flex-1 flex flex-col lg:flex-row gap-6 px-6 pb-6 pt-2">
         {/* Classroom */}
         <div className="flex-1 flex items-center justify-center">
           <ClassroomLayout />
@@ -72,9 +72,6 @@ function ClassroomView() {
             <MicButton sendTeacherInput={sendTeacherInput} />
           </div>
 
-          {/* Quick stats */}
-          <QuickStats />
-
           {/* Whisper Coach */}
           <WhisperCoach />
         </aside>
@@ -83,25 +80,6 @@ function ClassroomView() {
   )
 }
 
-function QuickStats() {
-  const students = useSessionStore((s) => s.students)
-  const studentList = Object.values(students)
-  const avgEng = Math.round((studentList.reduce((a, s) => a + s.engagement, 0) / studentList.length) * (studentList[0]?.engagement <= 1 ? 100 : 1))
-  const avgComp = Math.round((studentList.reduce((a, s) => a + s.comprehension, 0) / studentList.length) * (studentList[0]?.comprehension <= 1 ? 100 : 1))
-
-  return (
-    <div className="border-t border-classroom-border pt-4 space-y-2 text-sm">
-      <div className="flex justify-between text-gray-400">
-        <span>Avg Engagement</span>
-        <span className="text-white font-medium">{avgEng}%</span>
-      </div>
-      <div className="flex justify-between text-gray-400">
-        <span>Avg Comprehension</span>
-        <span className="text-white font-medium">{avgComp}%</span>
-      </div>
-    </div>
-  )
-}
 
 export default function App() {
   const view = useSessionStore((s) => s.view)

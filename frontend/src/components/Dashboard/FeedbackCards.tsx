@@ -26,7 +26,7 @@ function useScores(): FeedbackDimension[] {
   const studentSpeakers = new Set(
     conversation_log.filter((e) => e.speaker !== 'Teacher').map((e) => e.speaker)
   ).size
-  const inclusivity = Math.round((studentSpeakers / 5) * 100)
+  const inclusivity = Math.min(100, Math.round((studentSpeakers / 5) * 100))
 
   return [
     {

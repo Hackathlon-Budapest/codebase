@@ -60,6 +60,9 @@ export function ClassroomLayout() {
   const avgEngagement = Math.round(
     studentList.reduce((sum, s) => sum + s.engagement, 0) / studentList.length
   )
+  const avgComprehension = Math.round(
+    studentList.reduce((sum, s) => sum + s.comprehension, 0) / studentList.length
+  )
 
   // Get last message per student
   const lastMessages: Partial<Record<StudentId, string>> = {}
@@ -71,11 +74,11 @@ export function ClassroomLayout() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      {/* Temperature gauge */}
-      <div className="flex flex-col items-center gap-1">
-        <div className="text-xs uppercase tracking-widest text-gray-500">Classroom Temperature</div>
-        <TemperatureGauge value={avgEngagement} />
+    <div className="flex flex-col items-center gap-2">
+      {/* Gauges row */}
+      <div className="flex flex-row gap-4">
+        <TemperatureGauge value={avgEngagement} label="Engagement" size={160} />
+        <TemperatureGauge value={avgComprehension} label="Comprehension" size={160} />
       </div>
 
       {/* Classroom label */}

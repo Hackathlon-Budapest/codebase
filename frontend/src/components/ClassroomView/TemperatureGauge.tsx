@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 
 interface TemperatureGaugeProps {
   value: number // 0–100
+  label?: string
+  size?: number
 }
 
 // Semi-circle arc parameters.
@@ -36,8 +38,9 @@ function valueToColor(value: number): string {
   return '#22c55e'                    // green
 }
 
-export function TemperatureGauge({ value }: TemperatureGaugeProps) {
+export function TemperatureGauge({ value, label = 'Engagement', size = 200 }: TemperatureGaugeProps) {
   const clamped = Math.max(0, Math.min(100, value))
+  const height = Math.round(size * 116 / 200)
 
   const { dashOffset, color } = useMemo(() => {
     // stroke-dashoffset trick: full offset = no arc shown, 0 = full arc shown
@@ -52,9 +55,9 @@ export function TemperatureGauge({ value }: TemperatureGaugeProps) {
     <div className="flex flex-col items-center gap-1">
       <svg
         viewBox="0 0 200 116"
-        width="200"
-        height="116"
-        aria-label={`Classroom temperature: ${clamped}`}
+        width={size}
+        height={height}
+        aria-label={`${label}: ${clamped}`}
       >
         {/* Background arc */}
         <path
@@ -103,7 +106,7 @@ export function TemperatureGauge({ value }: TemperatureGaugeProps) {
           fontSize="10"
           fontFamily="inherit"
         >
-          Class Temp
+          {label}
         </text>
       </svg>
     </div>
