@@ -4,6 +4,7 @@ import { useSessionStore } from '../../store/sessionStore'
 import type { StudentId, StudentState } from '../../store/sessionStore'
 import { StudentAvatar } from './StudentAvatar'
 import { TemperatureGauge } from './TemperatureGauge'
+import { EMOTION_COLORS } from './EngagementBar'
 
 interface SlotProps {
   student: StudentState
@@ -98,6 +99,16 @@ export function ClassroomLayout() {
             <StudentSlot key={id} student={students[id]} lastMessage={lastMessages[id]} />
           ))}
         </div>
+      </div>
+
+      {/* Emotion color legend */}
+      <div className="mt-1 flex flex-wrap justify-center gap-x-3 gap-y-1">
+        {(Object.entries(EMOTION_COLORS) as [string, string][]).map(([emotion, color]) => (
+          <div key={emotion} className="flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+            <span className="text-xs text-gray-400 capitalize">{emotion}</span>
+          </div>
+        ))}
       </div>
     </div>
   )

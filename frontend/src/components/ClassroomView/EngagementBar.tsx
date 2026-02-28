@@ -7,7 +7,7 @@ interface Props {
   emotion: EmotionalState
 }
 
-const EMOTION_COLORS: Record<EmotionalState, string> = {
+export const EMOTION_COLORS: Record<EmotionalState, string> = {
   confused: '#f59e0b',
   bored: '#6b7280',
   engaged: '#22c55e',
