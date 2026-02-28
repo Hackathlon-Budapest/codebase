@@ -1,65 +1,108 @@
 # Test Conversation Script
 
-## Turn 1 — Warm opener (gauge should show ~60, coach: "Keep checking in…")
+Use this script to demo all major features in sequence. Recommended setup: History, Ancient Rome, Grade 10.
+
+---
+
+## Turn 1 — Warm opener
 
 ```
-Good morning everyone! Today we're learning about photosynthesis — how plants turn sunlight into food. Who can tell me what they already know about it?
+Good morning everyone! Today we're going to explore Ancient Rome — one of the greatest empires in history. Who can tell me what they already know about it?
 ```
 
-> Expect: Maya jumps in eagerly. Gauge holds steady. Coach gives default hint since Carlos is already confused.
+> Expect: Maya jumps in eagerly. Carlos may ask what "empire" means. Gauge holds steady around 60. Whisper Coach gives default hint.
+
+---
 
 ## Turn 2 — Complex language (gauge drops, coach warns about Carlos)
 
 ```
-Photosynthesis is the biochemical transduction of solar electromagnetic radiation into chemical potential energy via chlorophyll-mediated oxidative phosphorylation.
+The Roman Empire's longevity can be attributed to its sophisticated administrative bureaucracy, its standardized legal codex, and its military's tactical superiority in asymmetric engagements.
 ```
 
-> Expect: Carlos's engagement tanks (confused emoji). Gauge drops toward red. Coach: "💡 Carlos looks confused — try simplifying your language"
+> Expect: Carlos's engagement tanks (confused emoji). Gauge drops. Whisper Coach: "Carlos looks confused — try simplifying your language."
 
-## Turn 3 — Simplify + call on Carlos directly (gauge recovers)
+---
 
-```
-Sorry, let me say that differently. Carlos, think of it like this: plants eat sunlight like we eat food. Does that make more sense to you?
-```
-
-> Expect: Carlos re-engages slightly. Jake still drifting. Coach may flag Jake next.
-
-## Turn 4 — Call out Jake (coach responds to disengagement)
+## Turn 3 — Simplify + call on Carlos directly
 
 ```
-Jake! Eyes up here — I need you on this one. If a plant is in a dark room for a week, what do you think happens to it?
+Sorry, let me say that differently. Carlos — think of Rome like the biggest, most organized country you can imagine, with rules for everything and an army that almost never lost. Does that make more sense?
 ```
 
-> Expect: Jake responds (he reacts to direct callouts + enthusiasm). Gauge ticks up. Watch his emotional state shift from distracted → engaged.
+> Expect: Carlos re-engages slightly. Jake still drifting. Gauge recovers partially.
 
-## Turn 5 — Debate hook for Marcus (gauge climbs, Marcus engages)
+---
 
-```
-Here's a controversial question: some scientists think we could engineer super-plants that photosynthesize 10x faster to fight climate change. Is that a good idea, or are we playing with fire?
-```
-
-> Expect: Marcus engages hard (he loves debate + agency). Maya probably jumps in too. Gauge climbs toward green. Coach: "✅ Class is engaged — great pacing, keep it up"
-
-## Turn 6 — Encouragement for Priya (watch her bloom)
+## Turn 4 — Call out Jake
 
 ```
-Priya, I've noticed you've been thinking carefully. I'd love to hear your perspective — there's no wrong answer here.
+Jake! Eyes up here. If you were a Roman soldier 2,000 years ago, what do you think your biggest problem would be?
 ```
 
-> Expect: Priya responds (she blooms with encouragement). Watch her emotional state shift from anxious → engaged. Gauge likely peaks here.
+> Expect: Jake snaps to attention — he reacts to direct callouts and relatable framing. Engagement ticks up. Emotional state shifts from distracted to engaged.
 
-## Turn 7 — Disengage passively (let gauge drift, trigger re-engagement hint)
+---
+
+## Turn 5 — Debate hook for Marcus
+
+```
+Here's a controversial take: some historians argue Rome never actually fell — it just transformed into the Catholic Church and medieval Europe. Do you agree or is that just revisionist history?
+```
+
+> Expect: Marcus engages hard — he loves debate and agency. Maya jumps in too. Gauge climbs toward green. Whisper Coach: "Class is engaged — great pacing, keep it up."
+
+---
+
+## Turn 6 — Encouragement for Priya
+
+```
+Priya, I've noticed you've been thinking carefully this whole time. I'd love to hear your perspective — there's genuinely no wrong answer here.
+```
+
+> Expect: Priya responds — she blooms with encouragement. Emotional state shifts from anxious to engaged. Gauge likely peaks here.
+
+---
+
+## CHAOS MOMENT — Press "Inject Chaos" button
+
+Press the red Inject Chaos button in the header.
+
+> Expect: A random classroom event fires — e.g. "Jake's phone goes off loudly" or "Marcus gets up and walks toward the door." Watch students react authentically: Maya redirects the class, Carlos looks nervous, Jake apologizes or gets defensive. Engagement bars shift. Toast notification shows which event fired.
+
+---
+
+## Turn 7 — Recovery after chaos
+
+```
+Okay, let's refocus. Marcus, I want to hear your actual argument — do you think any modern country could collapse the way Rome did?
+```
+
+> Expect: Marcus re-engages. Whisper Coach: "Marcus just re-engaged — keep the energy up."
+
+---
+
+## Turn 8 — Disengage (let gauge drift)
 
 ```
 Let me just read you some notes from the textbook for a few minutes…
 ```
 
-> Expect: Jake and Marcus drift (bored/distracted). Gauge drops. Coach: "⚠️ Jake is disengaging — try calling on them directly"
+> Expect: Jake and Marcus drift (bored/distracted). Gauge drops. Whisper Coach: "Jake is disengaging — try calling on them directly."
 
-## Recovery — Pull them back
+---
 
-```
-Okay I'm done talking — Marcus, you've been suspiciously quiet. What's wrong with everything I just said?
-```
+## End Session
 
-> Expect: Marcus re-engages. Coach may show: "✅ Marcus just re-engaged — keep the energy up"
+Click "End Session" and wait for the Session Report to load.
+
+> Expect: Performance Overview cards (Engagement, Comprehension, Participation, Inclusivity), Engagement Over Time chart showing individual student curves, Student Summary section, AI Coaching Feedback in formatted markdown, and Teaching Autopsy.
+
+---
+
+## Grade Level Comparison (Optional Demo)
+
+Run the same Turn 1 prompt in a Grade 4 session vs a Grade 12 session to show grade adaptation.
+
+Grade 4 Maya: "Oh oh oh! Did they have knights? Like shiny armor guys?"
+Grade 12 Maya: "So the empire's administrative reach across three continents — how did they maintain coherence without modern communication infrastructure?"
