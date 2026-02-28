@@ -30,8 +30,8 @@ const AVATAR_IMAGE_MAP: Record<string, Partial<Record<EmotionalState, string>>> 
   },
   marcus: {
     eager: 'marcus_engaged', engaged: 'marcus_engaged', curious: 'marcus_curious',
-    confused: 'marcus_curious', bored: 'marcus_frustrated_bored',
-    distracted: 'marcus_frustrated_bored', anxious: 'marcus_curious', frustrated: 'marcus_frustrated',
+    confused: 'marcus_curious', bored: 'marcus_bored',
+    distracted: 'marcus_bored', anxious: 'marcus_curious', frustrated: 'marcus_frustrated',
   },
 }
 

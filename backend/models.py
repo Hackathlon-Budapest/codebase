@@ -38,6 +38,8 @@ class SessionState(BaseModel):
     timeline: list[dict] = []
     turn_count: int = 0
     active: bool = True
+    chaos_active: bool = False
+    chaos_event: Optional[dict] = None
 
 
 class TeacherMessage(BaseModel):
@@ -72,3 +74,8 @@ class SessionEndMessage(BaseModel):
 class ErrorMessage(BaseModel):
     type: str = "error"
     message: str
+
+
+class ChaosResolvedMessage(BaseModel):
+    type: str = "chaos_resolved"
+    coaching_hint: Optional[str] = None

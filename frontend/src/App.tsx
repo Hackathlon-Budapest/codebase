@@ -5,6 +5,7 @@ import { ClassroomLayout } from './components/ClassroomView/ClassroomLayout'
 import { WhisperCoach } from './components/ClassroomView/WhisperCoach'
 import { MicButton } from './components/TeacherControls/MicButton'
 import { ChaosButton } from './components/ClassroomView/ChaosButton'
+import { ChaosOverlay } from './components/ClassroomView/ChaosOverlay'
 import { SessionReport } from './components/Dashboard/SessionReport'
 import { useWebSocket } from './hooks/useWebSocket'
 
@@ -44,6 +45,9 @@ function ClassroomView() {
           </button>
         </div>
       </header>
+
+      {/* Chaos overlay */}
+      <ChaosOverlay />
 
       {/* Error banner */}
       {errorMessage && (

@@ -32,7 +32,12 @@ interface ErrorMsg {
   message: string
 }
 
-type BackendMessage = StudentResponseMsg | StateUpdateMsg | SessionEndMsg | ErrorMsg
+interface ChaosResolvedMsg {
+  type: 'chaos_resolved'
+  coaching_hint?: string | null
+}
+
+type BackendMessage = StudentResponseMsg | StateUpdateMsg | SessionEndMsg | ErrorMsg | ChaosResolvedMsg
 
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null)
@@ -57,6 +62,8 @@ export function useWebSocket() {
     endSession,
     setCoachingHint,
     setSpeakingStudent,
+    setChaosActive,
+    setChaosEvent,
   } = useSessionStore()
 
   playNextRef.current = () => {
@@ -143,9 +150,17 @@ export function useWebSocket() {
           setProcessing(false)
           break
         }
+        case 'chaos_resolved': {
+          setChaosActive(false)
+          setChaosEvent(null)
+          if (msg.coaching_hint) {
+            setCoachingHint(msg.coaching_hint)
+          }
+          break
+        }
       }
     },
-    [setProcessing, updateStudentState, addConversationEntry, applyStateUpdate, endSession, setError, setCoachingHint, setSpeakingStudent]
+    [setProcessing, updateStudentState, addConversationEntry, applyStateUpdate, endSession, setError, setCoachingHint, setSpeakingStudent, setChaosActive, setChaosEvent]
   )
 
   useEffect(() => {
