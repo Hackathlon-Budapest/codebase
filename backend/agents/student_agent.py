@@ -155,15 +155,17 @@ Provide your response as JSON with these fields:
 {{
   "text": "What you say (or empty string if you stay silent)",
   "emotional_state": "eager|confused|bored|frustrated|engaged|anxious|distracted",
-  "comprehension_delta": <integer -20 to +20, how this affected your understanding>,
-  "engagement_delta": <integer -20 to +20, how this affected your engagement>
+  "comprehension_delta": <integer -30 to +30, how this affected your understanding>,
+  "engagement_delta": <integer -30 to +30, how this affected your engagement>
 }}
 
 Rules for deltas:
 - Positive delta = the teacher's input helped/engaged you
 - Negative delta = the teacher's input confused/disengaged you
 - Zero = no significant change
-- Be realistic based on your persona's triggers and behavior patterns"""
+- Be realistic based on your persona's triggers and behavior patterns
+- Use strong values (±20 to ±30) when the input clearly matches or violates your triggers
+- Use small values (±5 to ±10) for neutral or mildly relevant input"""
 
 
 async def generate_response(
@@ -215,8 +217,8 @@ async def generate_response(
     # Parse and validate response
     text = response_data.get("text", "")
     emotional_state = response_data.get("emotional_state", state.emotional_state)
-    comprehension_delta = _clamp(int(response_data.get("comprehension_delta", 0)), -20, 20)
-    engagement_delta = _clamp(int(response_data.get("engagement_delta", 0)), -20, 20)
+    comprehension_delta = _clamp(int(response_data.get("comprehension_delta", 0)), -30, 30)
+    engagement_delta = _clamp(int(response_data.get("engagement_delta", 0)), -30, 30)
 
     # Validate emotional state
     valid_emotions = {"eager", "confused", "bored", "frustrated", "engaged", "anxious", "distracted"}
