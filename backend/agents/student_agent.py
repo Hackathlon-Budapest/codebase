@@ -120,10 +120,18 @@ def _build_context_message(
             text = entry.get("text", "")
             recent_history += f"  {speaker}: {text}\n"
 
+    triggers_block = "\n".join(
+        f"  - {trigger.replace('_', ' ')}: → {emotion}"
+        for trigger, emotion in persona.emotional_triggers.items()
+    )
+
     return f"""{grade_instruction}{lesson_block}CURRENT STATE:
 - Comprehension level: {state.comprehension}/100
 - Engagement level: {state.engagement}/100
 - Current emotion: {state.emotional_state}
+
+YOUR EMOTIONAL TRIGGERS:
+{triggers_block}
 
 RECENT CONVERSATION:
 {recent_history if recent_history else "  (Start of lesson)"}
