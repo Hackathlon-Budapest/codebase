@@ -20,6 +20,18 @@ export function MicButton({ sendTeacherInput }: Props) {
   const [isSending, setIsSending] = useState(false)
   const [textInput, setTextInput] = useState('')
   const confirmedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const autoResize = () => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }
+
+  useEffect(() => {
+    autoResize()
+  }, [textInput])
 
   // Clear confirmed text after 5 seconds
   useEffect(() => {
@@ -77,7 +89,7 @@ export function MicButton({ sendTeacherInput }: Props) {
     setTextInput('')
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') handleTextSend()
   }
 
@@ -188,14 +200,15 @@ export function MicButton({ sendTeacherInput }: Props) {
 
       {/* Text input fallback */}
       <div className="flex gap-2 w-full">
-        <input
-          type="text"
+        <textarea
+          ref={textareaRef}
+          rows={1}
           value={textInput}
           onChange={(e) => setTextInput(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
           placeholder="Or type here…"
-          className="flex-1 min-w-0 bg-classroom-bg border border-classroom-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-classroom-accent transition-colors disabled:opacity-40"
+          className="flex-1 min-w-0 bg-classroom-bg border border-classroom-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-classroom-accent transition-colors disabled:opacity-40 resize-none overflow-hidden"
         />
         <button
           onClick={handleTextSend}
