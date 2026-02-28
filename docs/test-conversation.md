@@ -1,108 +1,108 @@
 # Test Conversation Script
 
-Use this script to demo all major features in sequence. Recommended setup: History, Ancient Rome, Grade 10.
+Use this script to demo all major features in sequence. Recommended setup: Biology, Photosynthesis, Grade 9.
 
 ---
 
 ## Turn 1 — Warm opener
 
 ```
-Good morning everyone! Today we're going to explore Ancient Rome — one of the greatest empires in history. Who can tell me what they already know about it?
+Good morning everyone! Today we're learning about photosynthesis — how plants turn sunlight into food. Who can tell me what they already know about it?
 ```
 
-> Expect: Maya jumps in eagerly. Carlos may ask what "empire" means. Gauge holds steady around 60. Whisper Coach gives default hint.
+> Expect: Maya jumps in eagerly with a follow-up question. Jake curious but vague. Marcus already challenging the premise. Gauge holds steady around 60. Whisper Coach gives default hint.
 
 ---
 
-## Turn 2 — Complex language (gauge drops, coach warns about Carlos)
+## Turn 2 — Pull in Carlos and Marcus (baseline engagement up)
 
 ```
-The Roman Empire's longevity can be attributed to its sophisticated administrative bureaucracy, its standardized legal codex, and its military's tactical superiority in asymmetric engagements.
+Carlos, Marcus — before I go further, what do you two think? Does anything about how plants work already make sense to you, or is it a mystery?
 ```
 
-> Expect: Carlos's engagement tanks (confused emoji). Gauge drops. Whisper Coach: "Carlos looks confused — try simplifying your language."
+> Expect: Carlos attempts an answer (engagement ticks up from confused baseline). Marcus engages — he likes being asked directly and given room to think. Both avatars shift positively. Class average rises before the jargon bomb hits, making the contrast more dramatic.
 
 ---
 
-## Turn 3 — Simplify + call on Carlos directly
+## Turn 3 — Jargon bomb (gauge drops, coach warns about Carlos)
 
 ```
-Sorry, let me say that differently. Carlos — think of Rome like the biggest, most organized country you can imagine, with rules for everything and an army that almost never lost. Does that make more sense?
+Photosynthesis is the biochemical transduction of solar electromagnetic radiation into chemical potential energy via chlorophyll-mediated oxidative phosphorylation.
 ```
 
-> Expect: Carlos re-engages slightly. Jake still drifting. Gauge recovers partially.
+> Expect: Carlos's engagement tanks hard (confused emoji). Gauge drops toward red. Whisper Coach: "Carlos looks confused — try simplifying your language."
 
 ---
 
-## Turn 4 — Call out Jake
+## Turn 4 — First recovery attempt for Carlos (coach may persist)
 
 ```
-Jake! Eyes up here. If you were a Roman soldier 2,000 years ago, what do you think your biggest problem would be?
+Sorry — Carlos, think of it like this: plants eat sunlight like we eat food. Does that make more sense to you?
 ```
 
-> Expect: Jake snaps to attention — he reacts to direct callouts and relatable framing. Engagement ticks up. Emotional state shifts from distracted to engaged.
+> Expect: Carlos partially re-engages. If his follow-up still shows confusion, the Whisper Coach will stay on — point this out: "The AI caught that Carlos is still not there yet."
 
 ---
 
-## Turn 5 — Debate hook for Marcus
+## Turn 5 — Second Carlos attempt (coach clears) + Jake callout
 
 ```
-Here's a controversial take: some historians argue Rome never actually fell — it just transformed into the Catholic Church and medieval Europe. Do you agree or is that just revisionist history?
+Carlos — solar panel on a calculator. No light, no power, it dies. That's a plant. Jake! Same question — what happens to a plant locked in a dark room for a week?
 ```
 
-> Expect: Marcus engages hard — he loves debate and agency. Maya jumps in too. Gauge climbs toward green. Whisper Coach: "Class is engaged — great pacing, keep it up."
-
----
-
-## Turn 6 — Encouragement for Priya
-
-```
-Priya, I've noticed you've been thinking carefully this whole time. I'd love to hear your perspective — there's genuinely no wrong answer here.
-```
-
-> Expect: Priya responds — she blooms with encouragement. Emotional state shifts from anxious to engaged. Gauge likely peaks here.
+> Expect: Carlos re-engages, coach hint clears. Jake snaps to attention. Two students recovered in one turn. Narrate: "The AI tracked both and updated only when they actually responded."
 
 ---
 
 ## CHAOS MOMENT — Press "Inject Chaos" button
 
-Press the red Inject Chaos button in the header.
+Press the red **Inject Chaos** button in the header.
 
-> Expect: A random classroom event fires — e.g. "Jake's phone goes off loudly" or "Marcus gets up and walks toward the door." Watch students react authentically: Maya redirects the class, Carlos looks nervous, Jake apologizes or gets defensive. Engagement bars shift. Toast notification shows which event fired.
-
----
-
-## Turn 7 — Recovery after chaos
-
-```
-Okay, let's refocus. Marcus, I want to hear your actual argument — do you think any modern country could collapse the way Rome did?
-```
-
-> Expect: Marcus re-engages. Whisper Coach: "Marcus just re-engaged — keep the energy up."
+> Expect: Jake's phone blasts music. The whole class reacts — Maya tries to refocus, Marcus makes a comment, Carlos looks nervous. **Priya stays completely silent — that's her anxiety persona working exactly as designed.** Engagement bars shift across all students. Toast notification shows the event.
 
 ---
 
-## Turn 8 — Disengage (let gauge drift)
+## Turn 7 — Redirect Jake after chaos
 
 ```
-Let me just read you some notes from the textbook for a few minutes…
+Jake — just you, nobody else. Since your phone's already out: is water a solid, liquid, or gas right before it evaporates? One word.
 ```
 
-> Expect: Jake and Marcus drift (bored/distracted). Gauge drops. Whisper Coach: "Jake is disengaging — try calling on them directly."
+> Expect: Jake re-engages. The "just you, nobody else" signals to the AI that only Jake should respond. Class settles. Narrate the recovery arc on the engagement graph.
+
+---
+
+## Turn 8 — Marcus debate (engagement peak)
+
+```
+Marcus — here's a controversial one: scientists want to engineer super-plants that photosynthesize 10x faster to fight climate change. Good idea, or are we playing with fire?
+```
+
+> Expect: Marcus lights up hard. Maya jumps in too. Gauge climbs to its peak. Whisper Coach: "Class is engaged — great pacing, keep it up." Point to the engagement graph spike.
+
+---
+
+## Turn 9 — Priya blooms
+
+```
+Priya — Marcus just said it could backfire. Do you agree with him, or does your gut say something different? No wrong answer.
+```
+
+> Expect: Priya shifts anxious → engaged or curious. Engagement ticks up visibly. She gives a quiet but real answer. Point to the avatar change.
 
 ---
 
 ## End Session
 
-Click "End Session" and wait for the Session Report to load.
+Click **End Session** and wait for the Session Report to load.
 
-> Expect: Performance Overview cards (Engagement, Comprehension, Participation, Inclusivity), Engagement Over Time chart showing individual student curves, Student Summary section, AI Coaching Feedback in formatted markdown, and Teaching Autopsy.
+> Expect: Engagement Over Time chart showing the full arc (low start → Turn 2 callout lifts it → crash at Turn 3 jargon → recovery → chaos spike → peak at Turn 8). Conversation backlog with every turn logged. AI Teaching Autopsy with per-turn annotations and tips. Read one tip out loud.
 
 ---
 
-## Grade Level Comparison (Optional Demo)
+## Grade Level Comparison (Optional)
 
 Run the same Turn 1 prompt in a Grade 4 session vs a Grade 12 session to show grade adaptation.
 
-Grade 4 Maya: "Oh oh oh! Did they have knights? Like shiny armor guys?"
-Grade 12 Maya: "So the empire's administrative reach across three continents — how did they maintain coherence without modern communication infrastructure?"
+Grade 4 Maya: "Oh oh oh! Sunlight turns into food? Like magic?!"
+Grade 12 Maya: "So if chlorophyll is absorbing specific wavelengths — does the plant's efficiency change based on light spectrum?"
