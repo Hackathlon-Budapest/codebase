@@ -75,6 +75,10 @@ export interface SessionStore {
   // Whisper Coach
   coachingHint: string | null
 
+  // Chaos state
+  chaosActive: boolean
+  chaosEvent: string | null
+
   // Speaking state (set by audio queue, drives speech bubbles)
   speakingStudentId: StudentId | null
 
@@ -96,6 +100,8 @@ export interface SessionStore {
   setFeedback: (text: string | null, summary: string | null) => void
   setAutopsy: (autopsy: AutopsyAnnotation[] | null) => void
   setCoachingHint: (hint: string | null) => void
+  setChaosActive: (active: boolean) => void
+  setChaosEvent: (event: string | null) => void
   setSpeakingStudent: (id: StudentId | null) => void
   updateStudentState: (studentId: StudentId, updates: Partial<StudentState>) => void
   addConversationEntry: (entry: ConversationEntry) => void
@@ -173,6 +179,8 @@ const INITIAL_STATE = {
   speakingStudentId: null,
   autopsy: null,
   coachingHint: null,
+  chaosActive: false,
+  chaosEvent: null,
   isConnected: false,
   isProcessing: false,
   errorMessage: null,
@@ -196,6 +204,8 @@ export const useSessionStore = create<SessionStore>((set) => ({
       feedbackSummary: null,
       autopsy: null,
       coachingHint: null,
+      chaosActive: false,
+      chaosEvent: null,
     }),
 
   endSession: () => set({ view: 'dashboard', isProcessing: false }),
@@ -213,6 +223,10 @@ export const useSessionStore = create<SessionStore>((set) => ({
   setAutopsy: (autopsy) => set({ autopsy }),
 
   setCoachingHint: (coachingHint) => set({ coachingHint }),
+
+  setChaosActive: (chaosActive) => set({ chaosActive }),
+
+  setChaosEvent: (chaosEvent) => set({ chaosEvent }),
 
   setSpeakingStudent: (speakingStudentId) => set({ speakingStudentId }),
 

@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from models import (
     SessionState, SessionConfig, StudentState,
     StudentResponse, StateUpdate,
-    SessionEndMessage, ErrorMessage, EmotionalState
+    SessionEndMessage, ErrorMessage, EmotionalState, ChaosResolvedMessage
 )
 from agents.orchestrator import decide_responders, update_student_states, generate_coaching_hint
 from agents.student_agent import generate_response
@@ -112,6 +112,8 @@ async def inject_chaos(session_id: str, event_id: str | None = None):
         raise HTTPException(status_code=404, detail="Session not found")
     if not session.active:
         raise HTTPException(status_code=400, detail="Session is not active")
+    if session.chaos_active:
+        raise HTTPException(status_code=400, detail="Resolve existing chaos first")
     if event_id:
         event = get_chaos_event_by_id(event_id)
         if not event:
@@ -120,22 +122,31 @@ async def inject_chaos(session_id: str, event_id: str | None = None):
         event = get_random_chaos_event()
     session.turn_count += 1
     session.timeline.append({"turn": session.turn_count, "speaker": "teacher", "text": f"[CHAOS] {event['description']}"})
-    responders = await decide_responders(event["teacher_prompt"], session)
     lesson_context = {"subject": session.config.subject, "topic": session.config.topic, "grade_level": session.config.grade_level}
-    responses = []
-    for responder in responders:
-        sid = responder["student_id"]
+
+    # All students react in parallel (LLM + TTS)
+    async def respond(sid: str):
         student = session.students.get(sid)
         if not student:
-            continue
+            return None
         student_dict = {"name": student.name, "comprehension": round(student.comprehension * 100), "engagement": round(student.engagement * 100), "emotional_state": student.emotional_state.value, "response_history": []}
         try:
             resp = await asyncio.wait_for(generate_response(student_dict, event["teacher_prompt"], list(session.timeline), lesson_context), timeout=10.0)
         except asyncio.TimeoutError:
-            continue
-        responses.append({"student_id": sid, "student_name": student.name, "voice_id": student.voice_id, "text": resp.text, "emotional_state": resp.emotional_state, "comprehension_delta": resp.comprehension_delta, "engagement_delta": resp.engagement_delta, "audio_base64": None})
+            return None
+        try:
+            audio = await asyncio.wait_for(text_to_speech(resp.text, student.voice_id), timeout=8.0)
+        except (asyncio.TimeoutError, Exception):
+            audio = None
+        return {"student_id": sid, "student_name": student.name, "voice_id": student.voice_id, "text": resp.text, "emotional_state": resp.emotional_state, "comprehension_delta": resp.comprehension_delta, "engagement_delta": resp.engagement_delta, "audio_base64": audio}
+
+    results = await asyncio.gather(*[respond(sid) for sid in session.students.keys()])
+    responses = [r for r in results if r is not None]
+
     update_student_states(session, responses)
-    return {"event": event, "responders": [{"student_id": r["student_id"], "student_name": r["student_name"], "text": r["text"], "emotional_state": r["emotional_state"]} for r in responses], "turn": session.turn_count}
+    session.chaos_active = True
+    session.chaos_event = event
+    return {"event": event, "responders": [{"student_id": r["student_id"], "student_name": r["student_name"], "text": r["text"], "emotional_state": r["emotional_state"], "audio_base64": r["audio_base64"]} for r in responses], "turn": session.turn_count}
 
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
@@ -154,8 +165,22 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 session.turn_count += 1
                 session.timeline.append({"turn": session.turn_count, "speaker": "teacher", "text": teacher_text})
 
-                # 1. Orchestrator decides which students respond this turn
-                responders = await decide_responders(teacher_text, session)
+                # Detect and clear chaos state
+                was_chaos_active = session.chaos_active
+                chaos_event_saved = session.chaos_event
+                if was_chaos_active:
+                    session.chaos_active = False
+                    session.chaos_event = None
+
+                # Build generation prompt and choose responders
+                if was_chaos_active:
+                    chaos_desc = chaos_event_saved.get("description", "disruption") if chaos_event_saved else "disruption"
+                    generation_prompt = f"[CHAOS RESOLUTION] Teacher says: '{teacher_text}' to restore order after: {chaos_desc}. React naturally."
+                    responders = [{"student_id": sid, "reason": "chaos_resolution"} for sid in session.students.keys()]
+                else:
+                    generation_prompt = teacher_text
+                    # 1. Orchestrator decides which students respond this turn
+                    responders = await decide_responders(teacher_text, session)
 
                 # 2. Generate each selected student's response (in parallel)
                 lesson_context = {
@@ -195,7 +220,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     # Run current student's LLM — overlaps with previous student's TTS
                     try:
                         resp = await asyncio.wait_for(
-                            generate_response(student_dict, teacher_text, live_history, lesson_context),
+                            generate_response(student_dict, generation_prompt, live_history, lesson_context),
                             timeout=10.0
                         )
                     except asyncio.TimeoutError:
@@ -289,6 +314,12 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                         coaching_hint=coaching_hint,
                     ).model_dump_json()
                 )
+                if was_chaos_active:
+                    await websocket.send_text(
+                        ChaosResolvedMessage(
+                            coaching_hint="Chaos resolved — observe how your students responded to your intervention"
+                        ).model_dump_json()
+                    )
             elif data.get("type") == "session_end":
                 await websocket.send_text(SessionEndMessage(session_id=session_id).model_dump_json())
                 break
