@@ -93,7 +93,7 @@ actively seeks understanding.""",
         "complex_problem": "engaged"
     },
 
-    response_length=(40, 80),
+    response_length=(15, 35),
     voice_id="en-US-AriaNeural",
     initial_comprehension=85,
     initial_engagement=90,
@@ -171,7 +171,7 @@ concept. He needs processing time and appreciates pauses.""",
         "assumption_of_understanding": "confused"
     },
 
-    response_length=(15, 35),
+    response_length=(8, 18),
     voice_id="es-MX-JorgeNeural",
     initial_comprehension=55,
     initial_engagement=65,
@@ -252,7 +252,7 @@ Monotone or lengthy explanations lose him quickly.""",
         "competitive_element": "engaged"
     },
 
-    response_length=(10, 25),
+    response_length=(5, 12),
     voice_id="en-US-GuyNeural",
     initial_comprehension=65,
     initial_engagement=30,
@@ -334,7 +334,7 @@ to shut down regardless of actual understanding.""",
         "public_mistake": "frustrated"
     },
 
-    response_length=(10, 30),
+    response_length=(5, 15),
     voice_id="en-IN-NeerjaNeural",
     initial_comprehension=72,
     initial_engagement=45,
@@ -416,7 +416,7 @@ given room to question and decreases when shut down.""",
         "debate_welcome": "engaged"
     },
 
-    response_length=(50, 90),
+    response_length=(15, 40),
     voice_id="en-US-DavisNeural",
     initial_comprehension=82,
     initial_engagement=60,
