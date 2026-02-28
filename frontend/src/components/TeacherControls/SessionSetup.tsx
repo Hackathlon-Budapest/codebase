@@ -174,21 +174,49 @@ export function SessionSetup() {
           {isLoading ? 'Starting...' : 'Start Class'}
         </button>
 
-        {/* Student preview */}
+        {/* Student roster */}
         <div className="mt-6 pt-6 border-t border-classroom-border">
-          <p className="text-xs text-gray-500 mb-3">Your 5 students today:</p>
-          <div className="grid grid-cols-5 gap-2 text-center">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">Student Roster</p>
+            <span className="text-xs text-gray-600">5 active · 10 coming soon</span>
+          </div>
+
+          {/* Active students */}
+          <div className="grid grid-cols-5 gap-2 text-center mb-3">
             {[
-              { name: 'Maya', emoji: '⚡', desc: 'Eager' },
+              { name: 'Maya',   emoji: '⚡', desc: 'Eager' },
               { name: 'Carlos', emoji: '🌍', desc: 'ESL' },
-              { name: 'Jake', emoji: '🎮', desc: 'Distracted' },
-              { name: 'Priya', emoji: '🌸', desc: 'Anxious' },
+              { name: 'Jake',   emoji: '🎮', desc: 'Distracted' },
+              { name: 'Priya',  emoji: '🌸', desc: 'Anxious' },
               { name: 'Marcus', emoji: '🔍', desc: 'Skeptic' },
             ].map((s) => (
-              <div key={s.name} className="flex flex-col items-center gap-1">
-                <span className="text-xl">{s.emoji}</span>
-                <span className="text-xs font-medium text-gray-300">{s.name}</span>
-                <span className="text-xs text-gray-500">{s.desc}</span>
+              <div key={s.name} className="flex flex-col items-center gap-1 py-2 px-1 rounded-lg bg-classroom-bg border border-classroom-accent/40">
+                <span className="text-lg">{s.emoji}</span>
+                <span className="text-xs font-semibold text-white">{s.name}</span>
+                <span className="text-[10px] text-classroom-accent">{s.desc}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Locked placeholder students */}
+          <div className="grid grid-cols-5 gap-2 text-center">
+            {[
+              { name: 'Zara',   emoji: '🎨', desc: 'Visual' },
+              { name: 'Leo',    emoji: '🏆', desc: 'Type-A' },
+              { name: 'Aisha',  emoji: '🌟', desc: 'Perfectionist' },
+              { name: 'Tommy',  emoji: '🤫', desc: 'Observer' },
+              { name: 'Sofia',  emoji: '💬', desc: 'Social' },
+              { name: 'Ethan',  emoji: '📚', desc: 'Needs support' },
+              { name: 'Mia',    emoji: '✈️', desc: 'Transfer' },
+              { name: 'Daniel', emoji: '😏', desc: 'Contrarian' },
+              { name: 'Nia',    emoji: '💪', desc: 'Overconfident' },
+              { name: 'Liam',   emoji: '💡', desc: 'Gifted-bored' },
+            ].map((s) => (
+              <div key={s.name} className="relative flex flex-col items-center gap-1 py-2 px-1 rounded-lg bg-classroom-bg border border-classroom-border opacity-45">
+                <span className="text-lg">{s.emoji}</span>
+                <span className="text-xs font-medium text-gray-500">{s.name}</span>
+                <span className="text-[10px] text-gray-600">{s.desc}</span>
+                <span className="absolute -top-1.5 -right-1.5 text-[8px] bg-gray-700 text-gray-400 rounded-full px-1 py-px leading-tight">Soon</span>
               </div>
             ))}
           </div>
