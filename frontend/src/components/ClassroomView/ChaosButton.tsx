@@ -39,7 +39,7 @@ export function ChaosButton() {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`http://localhost:8000/session/${session_id}/chaos`, {
+      const response = await fetch(`http://localhost:8000/session/${session_id}/chaos?event_id=jake_phone`, {
         method: 'POST',
       })
       if (!response.ok) throw new Error('Chaos injection failed')

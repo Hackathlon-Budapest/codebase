@@ -210,13 +210,22 @@ def update_student_states(session: SessionState, responses: list[dict]) -> None:
         student = session.students[sid]
 
         # student_agent returns deltas on a 0-100 scale; session state uses 0.0-1.0
-        comp_delta = float(response.get("comprehension_delta", 0.0)) / 100.0
-        eng_delta = float(response.get("engagement_delta", 0.0)) / 100.0
+        # Divisor of 60 (instead of 100) amplifies reactions for more visible avatar changes
+        comp_delta = float(response.get("comprehension_delta", 0.0)) / 60.0
+        eng_delta = float(response.get("engagement_delta", 0.0)) / 60.0
+
+        new_emotion = response.get("emotional_state")
+
+        # Enforce consistency: bored/distracted can't have positive delta;
+        # eager/engaged can't have negative delta. Other states allow either direction.
+        if new_emotion in ("bored", "distracted") and eng_delta > 0:
+            eng_delta = -abs(eng_delta)
+        elif new_emotion in ("eager", "engaged") and eng_delta < 0:
+            eng_delta = abs(eng_delta)
 
         student.comprehension = _clamp(student.comprehension + comp_delta)
         student.engagement = _clamp(student.engagement + eng_delta)
 
-        new_emotion = response.get("emotional_state")
         if new_emotion and new_emotion in EmotionalState._value2member_map_:
             student.emotional_state = EmotionalState(new_emotion)
 
@@ -237,23 +246,23 @@ def update_student_states(session: SessionState, responses: list[dict]) -> None:
         if sid in responding_ids:
             continue
 
-        # Engagement drift based on current emotional state
+        # Engagement drift based on current emotional state (amplified for demo)
         if student.emotional_state in (EmotionalState.bored, EmotionalState.distracted):
-            eng_drift = -0.03
+            eng_drift = -0.06
         elif student.emotional_state in (EmotionalState.anxious, EmotionalState.frustrated):
-            eng_drift = -0.02
+            eng_drift = -0.04
         elif student.emotional_state == EmotionalState.confused:
-            eng_drift = -0.01
+            eng_drift = -0.02
         elif student.emotional_state == EmotionalState.engaged:
-            eng_drift = +0.01
+            eng_drift = +0.02
         else:  # eager
-            eng_drift = -0.01  # eager students get restless when not called on
+            eng_drift = -0.02  # eager students get restless when not called on
 
         # Comprehension drifts down when student isn't actively responding
         if student.emotional_state == EmotionalState.confused:
-            comp_drift = -0.02  # confusion deepens without intervention
+            comp_drift = -0.04  # confusion deepens without intervention
         elif student.emotional_state in (EmotionalState.bored, EmotionalState.distracted):
-            comp_drift = -0.01
+            comp_drift = -0.02
         else:
             comp_drift = 0.0
 
