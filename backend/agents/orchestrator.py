@@ -261,6 +261,23 @@ def update_student_states(session: SessionState, responses: list[dict]) -> None:
         student.comprehension = _clamp(student.comprehension + comp_drift)
         student.consecutive_turns_speaking = 0
 
+        derived = _emotion_from_scores(student.engagement, student.comprehension)
+        if derived is not None:
+            student.emotional_state = derived
+
+
+def _emotion_from_scores(engagement: float, comprehension: float) -> EmotionalState | None:
+    """Derive a baseline emotional state from score levels for passive students."""
+    if engagement >= 0.65 and comprehension >= 0.55:
+        return EmotionalState.engaged
+    elif comprehension < 0.35:
+        return EmotionalState.confused
+    elif engagement < 0.30:
+        return EmotionalState.bored
+    elif engagement < 0.45:
+        return EmotionalState.distracted
+    return None  # keep current emotion (frustration/anxiety valid at mid-range scores)
+
 
 def _clamp(value: float, lo: float = 0.0, hi: float = 1.0) -> float:
     return max(lo, min(hi, value))
