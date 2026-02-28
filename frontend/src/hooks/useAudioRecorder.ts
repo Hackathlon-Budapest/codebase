@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef } from 'react'
 
 interface UseAudioRecorderResult {
   isRecording: boolean
@@ -12,32 +12,33 @@ export function useAudioRecorder(): UseAudioRecorderResult {
   const [error, setError] = useState<string | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
+  const streamRef = useRef<MediaStream | null>(null)
 
-  const startRecording = useCallback(async () => {
+  const startRecording = async () => {
     setError(null)
-    chunksRef.current = []
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
+      chunksRef.current = []
+
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      mediaRecorderRef.current = mediaRecorder
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data)
       }
 
-      mediaRecorder.start(100)
-      mediaRecorderRef.current = mediaRecorder
+      mediaRecorder.start()
       setIsRecording(true)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Microphone access denied'
-      setError(msg)
+      setError(err instanceof Error ? err.message : 'Microphone access denied')
     }
-  }, [])
+  }
 
-  const stopRecording = useCallback((): Promise<string | null> => {
+  const stopRecording = (): Promise<string | null> => {
     return new Promise((resolve) => {
       const recorder = mediaRecorderRef.current
-      if (!recorder) {
+      if (!recorder || recorder.state === 'inactive') {
         resolve(null)
         return
       }
@@ -46,20 +47,25 @@ export function useAudioRecorder(): UseAudioRecorderResult {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
         const reader = new FileReader()
         reader.onloadend = () => {
-          const base64 = (reader.result as string).split(',')[1]
-          resolve(base64 ?? null)
+          const result = reader.result as string
+          // Strip the data URL prefix to get raw base64
+          const base64 = result.split(',')[1] ?? null
+          resolve(base64)
         }
+        reader.onerror = () => resolve(null)
         reader.readAsDataURL(blob)
 
-        // Stop all tracks to release mic
-        recorder.stream.getTracks().forEach((t) => t.stop())
+        // Release mic tracks
+        streamRef.current?.getTracks().forEach((t) => t.stop())
+        streamRef.current = null
         mediaRecorderRef.current = null
+        chunksRef.current = []
+        setIsRecording(false)
       }
 
       recorder.stop()
-      setIsRecording(false)
     })
-  }, [])
+  }
 
   return { isRecording, startRecording, stopRecording, error }
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAudioRecorder } from '../../hooks/useAudioRecorder'
 import { useLiveTranscript } from '../../hooks/useLiveTranscript'
+import { useAudioRecorder } from '../../hooks/useAudioRecorder'
 import { useSessionStore } from '../../store/sessionStore'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
@@ -11,14 +11,13 @@ interface Props {
 }
 
 export function MicButton({ sendTeacherInput }: Props) {
+  const { displayText, isListening, startListening, stopListening, error: speechError } = useLiveTranscript()
   const { isRecording, startRecording, stopRecording, error: micError } = useAudioRecorder()
-  const { interimText, startListening, stopListening } = useLiveTranscript()
   const isProcessing = useSessionStore((s) => s.isProcessing)
   const isConnected = useSessionStore((s) => s.isConnected)
 
-  const [isTranscribing, setIsTranscribing] = useState(false)
-  const [sttError, setSttError] = useState<string | null>(null)
   const [confirmedText, setConfirmedText] = useState<string | null>(null)
+  const [isSending, setIsSending] = useState(false)
   const [textInput, setTextInput] = useState('')
   const confirmedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -34,33 +33,37 @@ export function MicButton({ sendTeacherInput }: Props) {
   }, [confirmedText])
 
   const handleMicClick = async () => {
-    if (isRecording) {
-      stopListening()
-      const audio_base64 = await stopRecording()
-      if (!audio_base64) return
+    if (isListening) {
+      const webSpeechText = stopListening()      // sync — instant Web Speech text
+      setConfirmedText(webSpeechText || null)    // show preview immediately
 
-      setSttError(null)
-      setIsTranscribing(true)
-      try {
-        const res = await fetch(`${API_URL}/stt`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ audio_base64 }),
-        })
-        const data = await res.json()
-        if (data.text?.trim()) {
-          setConfirmedText(data.text.trim())
-          sendTeacherInput(data.text.trim())
-        } else {
-          setSttError('Could not transcribe — use text input below')
-        }
-      } catch {
-        setSttError('STT unavailable — use text input below')
-      } finally {
-        setIsTranscribing(false)
+      const audio_base64 = await stopRecording() // finalize audio chunks (~100ms)
+      if (!audio_base64) {
+        if (webSpeechText) sendTeacherInput(webSpeechText)  // fallback
+        return
       }
+
+      setIsSending(true)
+      ;(async () => {  // fire-and-forget — doesn't block the UI
+        try {
+          const res = await fetch(`${API_URL}/stt`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audio_base64 }),
+          })
+          const data = await res.json()
+          const finalText = data.text?.trim() || webSpeechText
+          if (finalText) {
+            setConfirmedText(finalText)
+            sendTeacherInput(finalText)
+          }
+        } catch {
+          if (webSpeechText) sendTeacherInput(webSpeechText)  // fallback on error
+        } finally {
+          setIsSending(false)
+        }
+      })()
     } else {
-      setSttError(null)
       setConfirmedText(null)
       startListening()
       await startRecording()
@@ -78,20 +81,20 @@ export function MicButton({ sendTeacherInput }: Props) {
     if (e.key === 'Enter') handleTextSend()
   }
 
-  const busy = isProcessing || isTranscribing
+  const busy = isProcessing || isSending
   const disabled = busy || !isConnected
 
-  const label = isRecording
+  const label = isListening
     ? 'Recording… tap to send'
-    : isTranscribing
-    ? 'Transcribing…'
+    : isSending
+    ? 'Sending to class…'
     : isProcessing
     ? 'Processing…'
     : !isConnected
     ? 'Connecting…'
     : 'Tap to speak'
 
-  const showTranscriptBox = isRecording || isTranscribing || !!confirmedText
+  const showTranscriptBox = isListening || isSending || !!confirmedText
 
   return (
     <div className="flex flex-col items-center gap-3 w-full">
@@ -100,20 +103,20 @@ export function MicButton({ sendTeacherInput }: Props) {
         onClick={handleMicClick}
         disabled={disabled}
         whileTap={{ scale: 0.92 }}
-        animate={isRecording ? { scale: [1, 1.08, 1] } : { scale: 1 }}
-        transition={isRecording ? { duration: 1, repeat: Infinity } : {}}
+        animate={isListening ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+        transition={isListening ? { duration: 1, repeat: Infinity } : {}}
         className={`
           w-16 h-16 rounded-full flex items-center justify-center text-2xl shadow-lg transition-colors
-          ${isRecording
+          ${isListening
             ? 'bg-red-500 hover:bg-red-600 text-white'
             : disabled
               ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
               : 'bg-classroom-accent hover:bg-blue-500 text-white'
           }
         `}
-        aria-label={isRecording ? 'Stop recording' : 'Start recording'}
+        aria-label={isListening ? 'Stop recording' : 'Start recording'}
       >
-        {isRecording ? '⏹' : isTranscribing ? '…' : '🎤'}
+        {isListening ? '⏹' : '🎤'}
       </motion.button>
 
       <span className="text-xs text-gray-400">{label}</span>
@@ -130,16 +133,16 @@ export function MicButton({ sendTeacherInput }: Props) {
             className="w-full"
           >
             <div className="rounded-lg border border-classroom-border bg-classroom-bg p-3 text-sm space-y-1">
-              {isRecording && (
+              {isListening && (
                 <>
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse flex-shrink-0" />
                     <span className="text-xs text-gray-400">Listening…</span>
                   </div>
                   <p className="text-gray-200 leading-relaxed min-h-[1.25rem]">
-                    {interimText ? (
+                    {displayText ? (
                       <>
-                        {interimText}
+                        {displayText}
                         <span className="inline-block w-0.5 h-3.5 bg-gray-300 ml-0.5 align-middle animate-pulse" />
                       </>
                     ) : (
@@ -152,20 +155,7 @@ export function MicButton({ sendTeacherInput }: Props) {
                 </>
               )}
 
-              {isTranscribing && (
-                <div className="flex items-center gap-2 text-gray-400">
-                  <motion.span
-                    animate={{ opacity: [1, 0.3, 1] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                    className="text-xs"
-                  >
-                    ⏳
-                  </motion.span>
-                  <span className="text-xs">Transcribing…</span>
-                </div>
-              )}
-
-              {confirmedText && !isRecording && !isTranscribing && (
+              {confirmedText && !isListening && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -175,13 +165,25 @@ export function MicButton({ sendTeacherInput }: Props) {
                   <p className="text-gray-200 leading-relaxed mt-0.5">{confirmedText}</p>
                 </motion.div>
               )}
+
+              {isSending && (
+                <div className="flex items-center gap-1.5">
+                  <motion.span
+                    animate={{ opacity: [1, 0.4, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  >
+                    📡
+                  </motion.span>
+                  <span className="text-xs text-gray-400">Sending to class…</span>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {(micError || sttError) && (
-        <p className="text-xs text-red-400">{micError ?? sttError}</p>
+      {(micError || speechError) && (
+        <p className="text-xs text-red-400">{micError ?? speechError}</p>
       )}
 
       {/* Text input fallback */}
