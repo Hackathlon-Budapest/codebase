@@ -28,7 +28,7 @@ function StudentSlot({ student, lastMessage }: SlotProps) {
   return (
     <div className="flex flex-col items-center">
       {/* Reserved bubble area — always 96px tall, bubble anchors to its bottom */}
-      <div className="h-24 w-52 flex items-end">
+      <div className="h-10 w-40 flex items-end">
         <AnimatePresence>
           {showBubble && lastMessage && (
             <motion.div
@@ -82,24 +82,20 @@ export function ClassroomLayout() {
       <div className="text-xs uppercase tracking-widest text-gray-500">Classroom</div>
 
       {/* 5-seat grid: 3 front + 2 back */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
         {/* Back row: Maya, Carlos, Jake */}
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-2 justify-center">
           {STUDENT_ORDER.slice(0, 3).map((id) => (
             <StudentSlot key={id} student={students[id]} lastMessage={lastMessages[id]} />
           ))}
         </div>
         {/* Front row: Priya, Marcus */}
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-2 justify-center">
           {STUDENT_ORDER.slice(3).map((id) => (
             <StudentSlot key={id} student={students[id]} lastMessage={lastMessages[id]} />
           ))}
         </div>
       </div>
-
-      {/* Whiteboard / teacher area indicator */}
-      <div className="mt-4 w-72 h-2 rounded-full bg-classroom-border opacity-50" />
-      <div className="text-xs text-gray-600 -mt-1">Whiteboard</div>
     </div>
   )
 }
